@@ -1,0 +1,25 @@
+project:
+  type: book
+
+book:
+  title: "Proyecto Final"
+  author: "José Núñez Gavilán"
+  date: today
+  chapters:
+    - index.qmd
+    - Introduccion.qmd
+    - Bloque I.qmd
+    - Bloque II.qmd
+    - Bloque III.qmd
+    - Anexo.qmd
+
+format:
+  html:
+    theme:
+      - cosmo
+      - brand
+  pdf:
+    documentclass: scrreprt
+
+
+

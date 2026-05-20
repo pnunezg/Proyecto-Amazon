@@ -1,0 +1,5 @@
+# Portada {.unnumbered}
+
+En este libro de Quarto se verá mi trabajo como analista de datos con el fin de entender cómo se estructuran las relaciones entre productos y usuarios en Amazon. Lograré este objetivo mediante las técnicas vistas en clase, especialmente, con técnicas de reducción de datos, grafos y clasificación para predecir el comportamiento del mercado
+
+*Proyecto desarrollado para la Universidad de Málaga.*

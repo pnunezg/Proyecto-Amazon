@@ -1,0 +1,11 @@
+# Introducción
+
+El comercio electrónico moderno, liderado por plataformas como Amazon, no solo genera transacciones económicas, sino una cantidad masiva de datos que reflejan el comportamiento, los gustos y las dinámicas de influencia de los consumidores. En este ecosistema, los productos no existen de forma aislada; están conectados a través de las experiencias y valoraciones de los usuarios.
+
+## Contexto del Proyecto
+
+Mi papel como analista de datos en este proyecto consiste en descifrar la **arquitectura de influencia** dentro de este mercado digital. El análisis se aborda desde tres perspectivas metodológicas conectadas entre sí:
+
+1. **Reducción de dimensionalidad (PCA):** Para condensar las variables de éxito de los productos (puntuaciones, volumen de críticas, precios) en componentes latentes interpretables.
+2. **Análisis de Redes Sociales (SNA):** Para modelar las interacciones como un grafo complejo de coparticipación, identificando productos líderes y comunidades de consumo.
+3. **Clasificación basada en enlaces:** Para explotar la topología de la red y predecir comportamientos latentes.

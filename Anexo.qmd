@@ -1,0 +1,38 @@
+# Anexo acerca del uso de la IA 
+
+De acuerdo con los requisitos del proyecto, esta sección documenta el uso de herramientas de Inteligencia Artificial como asistencia en la programación y análisis. El objetivo no es mostrar un registro exhaustivo de cada línea de código, sino evidenciar el **proceso iterativo, la validación crítica y la corrección de errores** o ineficiencias propuestas por la IA.
+
+A continuación, se detallan las interacciones más relevantes ordenadas por los bloques del proyecto.
+
+## Fase de Preparación
+
+### Interacción 1: Creación de la estructura del Anexo
+
+**1. Prompt inicial:**
+> *"dame un archivo de anexo que me sirva para ir rellenando las consultas realizadas a la IA tal y como pone en el PDF"*
+
+**2. Código generado por la IA:**
+
+Le he quitado todos los símbolos especiales que me devolvió la IA para que se vea más claro:
+
+::: {.callout-note appearance="simple"}
+Title: "Anexo: Diario de Interacción con IA (Prompt Log)"
+Format: html
+
+Bitácora de Prompts y Validación Humana
+De acuerdo con los requisitos del proyecto...
+[Plantilla para copiar y pegar en cada nueva consulta]
+Interacción X: [Título descriptivo, ej. Optimización del layout del grafo]
+1. Prompt inicial:
+2. Código erróneo o ineficiente generado por la IA
+3. Crítica y Refinamiento (Validación Humana)
+4. Solución final
+:::
+
+**3. Crítica y Refinamiento (Validación Humana)**
+El `Anexo.qmd` generado por la IA contiene información irrelevante y redundante.
+
+**4. Solución final**
+Eliminé la cabecera YAML duplicada y los textos de relleno. Solo me he quedado con los cuatro puntos destacados.
+
+### Interacción 2: Creación de la estructura del Anexo

@@ -1,0 +1,16 @@
+# Archivos temporales de R
+.Rproj.user
+.Rhistory
+.RData
+.RDataTmp
+.Ruserdata
+
+# Carpetas generadas por Quarto
+/.quarto/
+/_book/
+*_cache/
+*_files/
+
+# DATOS (¡Muy importante!)
+*.csv
+/datos/
