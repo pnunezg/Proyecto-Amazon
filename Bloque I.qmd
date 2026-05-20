@@ -1,1 +1,29 @@
+```{r}
+#| label: setup
+#| message: false
+#| warning: false
+
+set.seed(1234)
+library(dplyr)
+
+```
+
+
 # Bloque I. Análisis de Componentes Principales (PCA)
+
+La tarea a realizar en este bloque es la reducción de la dimensionalidad.
+
+```{r}
+datos_amazon <- fread("datos/Reviews.csv")
+
+summary(datos_amazon)
+
+head(datos_amazon)
+
+
+tabla_metricas <- datos_amazon |>
+  select(Score, Text)
+  
+head(tabla_metricas)
+```
+
