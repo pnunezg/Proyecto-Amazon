@@ -4,26 +4,76 @@
 #| warning: false
 
 set.seed(1234)
-library(dplyr)
+library(tidyverse)
+library(data.table)
+library(factoextra)
+library(patchwork)
+library(corrplot)
+```
 
+
+Carga del dataset
+```{r}
+datos_amazon <- fread("datos/Reviews.csv")
 ```
 
 
 # Bloque I. Análisis de Componentes Principales (PCA)
 
-La tarea a realizar en este bloque es la reducción de la dimensionalidad.
+Tarea: Reducción de dimensionalidad. Construir una tabla de métricas por producto (Rating promedio,
+número de reseñas, precio, longitud promedio del texto de la reseña)
 
 ```{r}
-datos_amazon <- fread("datos/Reviews.csv")
-
 summary(datos_amazon)
 
-head(datos_amazon)
-
-
 tabla_metricas <- datos_amazon |>
-  select(Score, Text)
+  group_by(ProductId) |>
+  summarise(
+    rating_promedio = mean(Score, na.rm = TRUE),
+    numero_de_reseñas = n(),
+    votos_utiles = sum(HelpfulnessNumerator, na.rm = TRUE),
+    votos_totales = sum(HelpfulnessDenominator, na.rm = TRUE),
+    #Con este if_else prevengo posibles valores faltantes
+    precio = if_else(votos_totales == 0, 0, votos_utiles / votos_totales),
+    longitud_promedio_texto = mean(str_length(Text), na.rm = TRUE)
+  ) |> 
+  select(ProductId,  rating_promedio, numero_de_reseñas, precio, longitud_promedio_texto) |>
+  drop_na()
+
+
+tabla_metricas_sin_productID <- tabla_metricas |> select(-ProductId)
+  
   
 head(tabla_metricas)
+str(tabla_metricas)
 ```
+
+Análisis: Aplicar PCA para reducir estas variables a 2 o 3 componentes principales.
+
+```{r}
+cor(tabla_metricas_sin_productID) |> 
+  corrplot(method = "number", type = "upper", 
+           col = colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))(200))
+```
+Las variables estan extremadamente poco correlacionadas entre sí.
+
+```{r}
+acp <- prcomp(tabla_metricas_sin_productID, center = TRUE, scale = TRUE)
+
+# Varianza explicada
+fviz_eig(acp, addlabels = TRUE, ylim = c(0, 70), title = "Scree Plot")
+# Contribuciones a las dos primeras componentes
+fviz_pca_var(acp, col.var = "contrib", 
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE, title = "Variables y sus contribuciones")
+
+
+summary(acp)
+
+```
+Como se puede ver en la Cumulative Proportion esa es la varianza explicada con 2 y 3 componentes principales
+
+Interpretación: ¿Qué representan los ejes? (Ej: ¿El PC1 separa productos “Premium” de “Ventas Masivas”?). Debéis justificar la retención de varianza con un Scree Plot. Si solo hay código no se evalúa,
+debéis ir extrayendo conocimiento en cada paso, interpretad, analizad resultados. Justificad la retención de varianza mediante el criterio de Kaiser o el gráfico de sedimentación, e interpretad qué
+significan físicamente los nuevos ejes.
 

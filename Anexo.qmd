@@ -35,4 +35,40 @@ El `Anexo.qmd` generado por la IA contiene información irrelevante y redundante
 **4. Solución final**
 Eliminé la cabecera YAML duplicada y los textos de relleno. Solo me he quedado con los cuatro puntos destacados.
 
-### Interacción 2: Creación de la estructura del Anexo
+### Interacción 2: Funcion para hallar la longitud de un String
+
+
+cual es el equivalente de lenght() para Strings en r
+
+
+**1. Prompt inicial:**
+> *"cual es el equivalente de lenght() para Strings en r"*
+
+**2. Código generado por la IA:**
+
+::: {.callout-note appearance="simple"}
+1. Con R Base (No requiere cargar librerías)
+La función nativa de R es nchar() (del inglés number of characters).
+
+R
+texto <- "Amazon"
+nchar(texto)
+# Resultado: 6
+2. Con el paquete stringr (Incluido en tidyverse)
+La función equivalente es str_length().
+
+R
+library(tidyverse)
+
+texto <- "Amazon"
+str_length(texto)
+# Resultado: 6
+:::
+
+**3. Crítica y Refinamiento (Validación Humana)**
+Ambas funciones me sirven
+
+**4. Solución final**
+Cojo el str_length() para trabajar todo con tidyverse
+
+### Interacción 3: Creación de la estructura del Anexo
