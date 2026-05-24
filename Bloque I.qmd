@@ -1,1 +1,119 @@
+```{r}
+#| label: setup
+#| message: false
+#| warning: false
+
+set.seed(123)
+library(tidyverse)
+library(data.table)
+library(factoextra)
+library(patchwork)
+library(corrplot)
+```
+
+```{r}
+datos_amazon <- fread("datos/Reviews.csv")
+```
+
 # Bloque I. Análisis de Componentes Principales (PCA)
+
+En esta primera fase, el objetivo es extraer las dimensiones latentes que definen el éxito de un producto.
+
+## Creación de la tabla de métricas
+
+```{r}
+tabla_metricas <- datos_amazon |>
+  group_by(ProductId) |>
+  summarise(
+    rating_promedio = mean(Score, na.rm = TRUE),
+    numero_de_reseñas = n(),
+    #Como no hay columna de precio, se calcula de esta forma (dicho en clase)
+    votos_utiles = sum(HelpfulnessNumerator, na.rm = TRUE),
+    votos_totales = sum(HelpfulnessDenominator, na.rm = TRUE),
+    #Con este if_else prevengo posibles valores faltantes en caso de que los votos totales fuesen 0
+    precio = if_else(votos_totales == 0, 0, votos_utiles / votos_totales),
+    longitud_promedio_texto = mean(str_length(Text), na.rm = TRUE)
+  ) |>
+  select(ProductId, rating_promedio, numero_de_reseñas, precio, longitud_promedio_texto) |>
+  drop_na()
+
+#En caso de querer tener una tabla sin los identificadores (para aplicar PCA)
+tabla_metricas_sin_productID <- tabla_metricas |> select(-ProductId)
+
+head(tabla_metricas)
+head(tabla_metricas_sin_productID)
+```
+
+***
+## Análisis de los datos
+
+He optado por representar el PCA en **2 componentes principales**, lo que permite una visualización directa en 2D.
+
+```{r}
+tabla_metricas_sin_productID_escalado <- scale(tabla_metricas_sin_productID)
+
+#Calculo la correlación entre cada variable y la represento mediante corrplot
+cor(tabla_metricas_sin_productID_escalado) |>
+  corrplot(method = "number", type = "upper",
+           col = colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))(200))
+```
+
+Se puede apreciar que las variables están **muy poco correlacionadas entre sí**. Esto tiene una implicación directa sobre el PCA: al no existir correlación fuerte entre ellas, ninguna componente dominará de forma clara la varianza total, sino que esta se repartirá de forma más equilibrada entre los ejes.
+
+***
+
+```{r}
+acp <- prcomp(tabla_metricas_sin_productID, center = TRUE, scale = TRUE)
+
+# Contribuciones a las dos primeras componentes
+fviz_pca_var(acp, col.var = "contrib",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE, title = "Variables y sus contribuciones")
+
+resumen_acp <- summary(acp)
+```
+
+## Interpretación de los ejes y de las correlaciones
+
+- **PC2 (Dim2) — Calidad del producto.** El rating promedio apenas influye en Dim1 y aporta valor casi exclusivamente en Dim2. Por otro lado, la longitud promedio del texto influye de la misma manera en ambas dimensiones (vector con ángulo de 45°). Sabiendo esto, se puede observar que esta variable está correlacionada negativamente con el rating promedio (aunque de una forma débil): parece ser que a mayor valoración, más corta es la crítica. El número de reseñas y el precio también influyen en esta dimensión, pero en mucha menor medida. Además, estas dos últimas están muy poco correlacionadas tanto con el rating promedio como con la longitud promedio del texto.
+
+- **PC1 (Dim1) — Popularidad del producto.** En esta dimensión influyen en mayor medida el precio y el número de reseñas, que forman un ángulo pequeño entre sí (correlación positiva: a mejor precio, mayor número de reseñas, más accesible al público). La longitud promedio del texto también afecta a este eje con el mismo módulo que en PC2, aunque en menor medida que precio y número de reseñas, sin estar correlacionada con ninguna de estas. El rating promedio no aporta valor real a este eje al ser prácticamente perpendicular a él.
+
+***
+
+### Justificación de la retención de varianza — Scree Plot
+
+```{r}
+# Varianza explicada
+fviz_eig(acp,
+         addlabels = TRUE,
+         choice = ("variance"),
+         ylim = c(0, 70),
+         title = "Scree Plot - Varianza Explicada")
+
+#Varianza explicada por PC1 y PC2
+resumen_acp$importance[3,2] * 100
+
+#Varianza explicada por PC1, PC2 y PC3
+resumen_acp$importance[3,3] * 100
+```
+
+Proyectar los datos en dos dimensiones captura una varianza aproximada del **55%**, es decir, recoge el 55% de las diferencias presentes en el conjunto de datos. Si se realizase una representación 3D, la varianza capturada ascendería hasta el **78%**.
+
+***
+
+### Criterio de Kaiser
+
+```{r}
+# Autovalores
+# Mediante la documentación en r averiguo el campo choice de esta función
+fviz_eig(acp,
+         choice = "eigenvalue",
+         addlabels = TRUE,
+         ylim = c(0, 2),
+         title = "Scree Plot - Criterio de Kaiser") +
+  # Línea de corte de Kaiser en y = 1
+  geom_hline(yintercept = 1, linetype = "dashed", color = "red", linewidth = 1)
+```
+
+**El criterio de Kaiser establece que solo aportan valor real las componentes cuyo autovalor asociado sea mayor que 1.** Dado que PC1 y PC2 superan dicho umbral y PC3 queda por debajo, se retienen las 2 primeras componentes. Aunque con 3 se capturaría el 78% de la varianza, el criterio de Kaiser penaliza PC3 al no aportar más información de la que contendría una variable original estandarizada. Este criterio peca de que con pocas variables tiende a retener muy pocas. Aquí se puede apreciar muy bien ya que no hay un claro codo pero el criterio estable que solo nos quedemos con las dos primeras dimensiones.
