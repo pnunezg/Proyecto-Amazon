@@ -65,10 +65,42 @@ str_length(texto)
 # Resultado: 6
 :::
 
-**3. Crítica y Refinamiento (Validación Humana)**
-Ambas funciones me sirven
-
-**4. Solución final**
+**3. Solución final**
 Cojo el str_length() para trabajar todo con tidyverse
 
-### Interacción 3: Creación de la estructura del Anexo
+### Interacción 3: Visualización del Criterio de Káiser
+
+**1. Prompt inicial:**´
+
+> *"fviz_eig(acp, choice = eigenvalue, addlabels = TRUE, ylim = c(0, 2), title = Scree Plot - Criterio de Kaiser) como le añado una linea que pase por y = 1"*
+
+**2. Código generado por la IA:**
+
+::: {.callout-note appearance="simple"}
+fviz_eig(acp,
+         choice = "eigenvalue",
+         addlabels = TRUE,
+         ylim = c(0, 2),
+         title = "Scree Plot - Criterio de Kaiser") +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "red", linewidth = 1)
+:::
+
+### Interacción 4: Semilla a usar
+
+**1. Prompt inicial:**´
+
+> *(Adjunté el pdf de la prácitca) "¿Qué semilla es la mejor para que todos los bloques de este proyecto?"*
+
+**2. Código generado por la IA:**
+
+::: {.callout-note appearance="simple"}
+Leyendo la rúbrica, lo más importante es que el set.seed sea consistente en todos los bloques ya que uno de los requisitos clave es la reproducibilidad.
+
+Te recomendaría poner set.seed(123) por estas razones:
+
+Es el más estándar y reconocible académicamente
+Lo verá el profesor y sabrá inmediatamente que es una semilla de control, no un número aleatorio
+:::
+
+### Interacción 5: 
+
