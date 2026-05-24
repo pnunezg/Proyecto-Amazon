@@ -7,7 +7,6 @@ set.seed(123)
 library(tidyverse)
 library(data.table)
 library(factoextra)
-library(patchwork)
 library(corrplot)
 ```
 

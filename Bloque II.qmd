@@ -1,3 +1,20 @@
+```{r}
+#| label: setup
+#| message: false
+#| warning: false
+
+set.seed(123)
+library(igraph)    
+library(tidygraph) 
+library(ggraph)    
+```
+
 ## Bloque II. Análisis de Redes Sociales (SNA)
 
+Una vez reducida la dimensionalidad, pasaréis a modelar el ecosistema de consumo como una red
+compleja bidimensional.
+
+
+```{r}
+```
 
