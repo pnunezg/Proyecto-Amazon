@@ -16,5 +16,65 @@ compleja bidimensional.
 
 
 ```{r}
+# === BLOQUE II: ANÁLISIS DE REDES SOCIALES (SNA) ===
+
+# 1. Blindamos los identificadores añadiendo prefijos
+dt_red <- datos_filtrados[, .(
+  UserNode = paste0("U_", UserId), 
+  ProductNode = paste0("P_", ProductId)
+)]
+
+# 2. Creamos el grafo con estas nuevas columnas seguras
+grafo_bipartito <- graph_from_data_frame(dt_red, directed = FALSE)
+
+# 3. Asignamos el tipo: TRUE si el nombre empieza por "U_", FALSE si no
+V(grafo_bipartito)$type <- grepl("^U_", V(grafo_bipartito)$name)
+
+# 4. Proyección bipartita (¡Ahora es imposible que falle!)
+proyecciones <- bipartite_projection(grafo_bipartito)
+
+# 5. Extraemos nuestra red de productos (proj2 son los FALSE, es decir, los "P_")
+grafo_productos <- proyecciones$proj2
+
+# 6. Limpieza de nodos aislados
+grados <- degree(grafo_productos)
+grafo_limpio <- delete_vertices(grafo_productos, V(grafo_productos)[grados == 0])
+
+# Vemos nuestro grafo final
+cat("Nodos finales:", vcount(grafo_limpio), "\n")
+cat("Aristas finales:", ecount(grafo_limpio), "\n")
 ```
+```{r}
+# === DETECCIÓN DE COMUNIDADES Y VISUALIZACIÓN ===
+
+# 1. Detección de comunidades (Algoritmo de Louvain)
+comunidades <- cluster_louvain(grafo_limpio)
+
+# Añadimos la comunidad como un atributo a los nodos para poder colorearlos
+V(grafo_limpio)$comunidad <- as.factor(membership(comunidades))
+V(grafo_limpio)$grado <- degree(grafo_limpio)
+
+# 2. Filtrado Inteligente para Visualización (K-Core)
+# Para evitar colapsar el layout con miles de nodos, extraemos el "k-core principal".
+# Esto elimina los nodos periféricos y deja solo la estructura central más densa.
+k_core_values <- coreness(grafo_limpio)
+
+# Nos quedamos con los productos que pertenecen a un k-core de nivel 3 o superior
+grafo_visual <- induced_subgraph(grafo_limpio, V(grafo_limpio)[k_core_values >= 3])
+
+# 3. Ploteo con ggraph
+set.seed(123)
+# Al haber filtrado el grafo, ahora sí podemos usar un layout de fuerzas como 'fr' (Fruchterman-Reingold)
+ggraph(grafo_visual, layout = "fr") + 
+  geom_edge_link(alpha = 0.2, color = "gray70") +
+  geom_node_point(aes(color = comunidad, size = grado), alpha = 0.9) + 
+  scale_size_continuous(range = c(1, 6), guide = "none") + 
+  theme_graph() +
+  labs(
+    title = "Ecosistema de Consumo durante el Mundial 2010",
+    subtitle = "Red filtrada por K-core >= 3 y coloreada mediante comunidades de Louvain"
+  ) +
+  theme(legend.position = "none") # ¡Esto elimina el monstruo de los números!
+```
+
 

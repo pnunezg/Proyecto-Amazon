@@ -12,7 +12,11 @@ library(corrplot)
 
 ```{r}
 datos_amazon <- fread("datos/Reviews.csv")
+
+#TimeStamps del principio y el final del mundial de Sudáfrica
+datos_filtrados <- datos_amazon[Time >= 1276214400 & Time < 1278892800]
 ```
+
 
 # Bloque I. Análisis de Componentes Principales (PCA)
 
@@ -21,7 +25,7 @@ En esta primera fase, el objetivo es extraer las dimensiones latentes que define
 ## Creación de la tabla de métricas
 
 ```{r}
-tabla_metricas <- datos_amazon |>
+tabla_metricas <- datos_filtrados |>
   group_by(ProductId) |>
   summarise(
     rating_promedio = mean(Score, na.rm = TRUE),
@@ -74,9 +78,9 @@ resumen_acp <- summary(acp)
 
 ## Interpretación de los ejes y de las correlaciones
 
-- **PC2 (Dim2) — Calidad del producto.** El rating promedio apenas influye en Dim1 y aporta valor casi exclusivamente en Dim2. Por otro lado, la longitud promedio del texto influye de la misma manera en ambas dimensiones (vector con ángulo de 45°). Sabiendo esto, se puede observar que esta variable está correlacionada negativamente con el rating promedio (aunque de una forma débil): parece ser que a mayor valoración, más corta es la crítica. El número de reseñas y el precio también influyen en esta dimensión, pero en mucha menor medida. Además, estas dos últimas están muy poco correlacionadas tanto con el rating promedio como con la longitud promedio del texto.
+- **PC2 (Dim2) — Calidad del producto/Supuesta Calidad (por ser un producto más desconocido).** El rating promedio apenas influye en Dim1 y aporta valor casi exclusivamente en Dim2. Por otro lado, la longitud promedio del texto y el número de reseñas influyen en menor medida en este eje que en el otro. Sabiendo esto, al mirar los vectores se puede observar que estas variables están correlacionadas negativamente con el rating promedio (aunque de una forma débil, ya que apuntan en sentidos opuestos). En cuanto al precio, según el análisis, vemos que acompaña al rating. En resumen: parece ser que a mayor valoración tenga un producto, más corta es la crítica, tendrá un número menor de reseñas y será más caro.
 
-- **PC1 (Dim1) — Popularidad del producto.** En esta dimensión influyen en mayor medida el precio y el número de reseñas, que forman un ángulo pequeño entre sí (correlación positiva: a mejor precio, mayor número de reseñas, más accesible al público). La longitud promedio del texto también afecta a este eje con el mismo módulo que en PC2, aunque en menor medida que precio y número de reseñas, sin estar correlacionada con ninguna de estas. El rating promedio no aporta valor real a este eje al ser prácticamente perpendicular a él.
+- **PC1 (Dim1) — Popularidad del producto/Popularidad-Precio.** En esta dimensión influyen el precio, el número de reseñas y la longitud promedio del texto. Aunque visualmente en el gráfico forman un ángulo pequeño entre sí (lo que invitaría a pensar en una correlación positiva fuerte donde a mejor precio, más reseñas y textos más largos), ya vimos en la matriz de correlación previa que esto no es así (apenas un 0.08). Esta "ilusión visual" se da porque el gráfico 2D es solo una proyección parcial de los datos: en realidad, estas tres variables se agrupan aquí simplemente porque todas miden el "volumen" o el tamaño masivo del producto, pero sin que una sea causa de la otra. Por otra parte, el rating promedio no aporta valor real a este eje al ser prácticamente perpendicular a él
 
 ***
 
@@ -97,7 +101,7 @@ resumen_acp$importance[3,2] * 100
 resumen_acp$importance[3,3] * 100
 ```
 
-Proyectar los datos en dos dimensiones captura una varianza aproximada del **55%**, es decir, recoge el 55% de las diferencias presentes en el conjunto de datos. Si se realizase una representación 3D, la varianza capturada ascendería hasta el **78%**.
+Proyectar los datos en dos dimensiones captura una varianza aproximada del **55%**, es decir, recoge el 55% de las diferencias presentes en el conjunto de datos. Si se realizase una representación 3D, la varianza capturada ascendería hasta el **79%**.
 
 ***
 
@@ -115,4 +119,4 @@ fviz_eig(acp,
   geom_hline(yintercept = 1, linetype = "dashed", color = "red", linewidth = 1)
 ```
 
-**El criterio de Kaiser establece que solo aportan valor real las componentes cuyo autovalor asociado sea mayor que 1.** Dado que PC1 y PC2 superan dicho umbral y PC3 queda por debajo, se retienen las 2 primeras componentes. Aunque con 3 se capturaría el 78% de la varianza, el criterio de Kaiser penaliza PC3 al no aportar más información de la que contendría una variable original estandarizada. Este criterio peca de que con pocas variables tiende a retener muy pocas. Aquí se puede apreciar muy bien ya que no hay un claro codo pero el criterio estable que solo nos quedemos con las dos primeras dimensiones.
+**El criterio de Kaiser establece que solo aportan valor real las componentes cuyo autovalor asociado sea mayor que 1.** Dado que PC1 y PC2 superan dicho umbral y PC3 queda por debajo, se retienen las 2 primeras componentes. Aunque con 3 se capturaría el 79% de la varianza, el criterio de Kaiser penaliza PC3 al no aportar más información de la que contendría una variable original estandarizada (con varianza 1). El problema con este criterio es que cuando tiene pocas variables tiende a retener muy pocas. Aquí se puede apreciar muy bien esto mismo ya que no hay un claro codo pero el criterio establece que solo nos quedemos con las dos primeras dimensiones.
