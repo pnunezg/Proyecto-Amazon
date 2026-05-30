@@ -21,3 +21,4 @@
 # Datos
 *.csv
 /datos/
+**/*.quarto_ipynb

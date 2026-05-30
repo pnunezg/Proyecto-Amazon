@@ -15,66 +15,68 @@ Una vez reducida la dimensionalidad, pasaréis a modelar el ecosistema de consum
 compleja bidimensional.
 
 
-```{r}
-# === BLOQUE II: ANÁLISIS DE REDES SOCIALES (SNA) ===
+## Bloque II. Análisis de Redes Sociales (SNA)
 
-# 1. Blindamos los identificadores añadiendo prefijos
+Una vez extraídas las dimensiones latentes en el Bloque I, pasamos a modelar el ecosistema de consumo como una red compleja. En este enfoque, asumimos que los productos no existen de forma aislada: su relevancia y éxito también vienen determinados por cómo los usuarios navegan y consumen dentro de la plataforma.
+
+### 1. Construcción de la Red y Justificación del Umbral (N)
+
+Para construir nuestra red de productos, partimos de un grafo bipartito (Usuarios y Productos). Al realizar la proyección unimodal, conectamos dos productos si han sido reseñados por los mismos usuarios. 
+
+Dado el volumen masivo de datos de Amazon, conectar productos que comparten un solo usuario ($N=1$) generaría un grafo excesivamente denso (conocido visualmente como "bola de pelo"), lo cual es ineficiente computacionalmente y aporta poco valor analítico. Por ello, **he optado por establecer un umbral de coparticipación de $N \ge 2$**. Esto asegura que las aristas representen verdaderos patrones de consumo conjunto y reduce drásticamente la densidad de la red, eliminando conexiones ruidosas o causales.
+
+```{r}
+# 1. Blindamos los identificadores añadiendo prefijos para evitar colisiones
 dt_red <- datos_filtrados[, .(
   UserNode = paste0("U_", UserId), 
   ProductNode = paste0("P_", ProductId)
 )]
 
-# 2. Creamos el grafo con estas nuevas columnas seguras
+# 2. Creamos el grafo bipartito y lo proyectamos
 grafo_bipartito <- graph_from_data_frame(dt_red, directed = FALSE)
-
-# 3. Asignamos el tipo: TRUE si el nombre empieza por "U_", FALSE si no
 V(grafo_bipartito)$type <- grepl("^U_", V(grafo_bipartito)$name)
 
-# 4. Proyección bipartita (¡Ahora es imposible que falle!)
+# La proyección 2 corresponde a los productos (type = FALSE)
 proyecciones <- bipartite_projection(grafo_bipartito)
-
-# 5. Extraemos nuestra red de productos (proj2 son los FALSE, es decir, los "P_")
 grafo_productos <- proyecciones$proj2
 
-# 6. Limpieza de nodos aislados
-grados <- degree(grafo_productos)
-grafo_limpio <- delete_vertices(grafo_productos, V(grafo_productos)[grados == 0])
+# Convertimos a tbl_graph para aprovechar la manipulación de datos estructurada
+grafo_tidy <- as_tbl_graph(grafo_productos) |>
+  
+  # A. FILTRADO DE ARISTAS (Umbral N >= 2)
+  activate(edges) |>
+  filter(weight >= 2) |> 
+  
+  # B. CÁLCULO DE MÉTRICAS TOPOLÓGICAS
+  activate(nodes) |>
+  # Limpiamos los nodos que se hayan quedado aislados tras el filtrado de aristas
+  filter(!node_is_isolated()) |> 
+  mutate(
+    pagerank = centrality_pagerank(),
+    betweenness = centrality_betweenness(),
+    grado = centrality_degree(),
+    comunidad = as.factor(group_louvain()),
+    
+    # Calculamos el K-Core para el filtrado visual posterior
+    k_core = node_coreness()
+  )
 
-# Vemos nuestro grafo final
-cat("Nodos finales:", vcount(grafo_limpio), "\n")
-cat("Aristas finales:", ecount(grafo_limpio), "\n")
-```
-```{r}
-# === DETECCIÓN DE COMUNIDADES Y VISUALIZACIÓN ===
+# Filtrado inteligente para visualización
+grafo_visual <- grafo_tidy |>
+  activate(nodes) |>
+  filter(k_core >= 3)
 
-# 1. Detección de comunidades (Algoritmo de Louvain)
-comunidades <- cluster_louvain(grafo_limpio)
-
-# Añadimos la comunidad como un atributo a los nodos para poder colorearlos
-V(grafo_limpio)$comunidad <- as.factor(membership(comunidades))
-V(grafo_limpio)$grado <- degree(grafo_limpio)
-
-# 2. Filtrado Inteligente para Visualización (K-Core)
-# Para evitar colapsar el layout con miles de nodos, extraemos el "k-core principal".
-# Esto elimina los nodos periféricos y deja solo la estructura central más densa.
-k_core_values <- coreness(grafo_limpio)
-
-# Nos quedamos con los productos que pertenecen a un k-core de nivel 3 o superior
-grafo_visual <- induced_subgraph(grafo_limpio, V(grafo_limpio)[k_core_values >= 3])
-
-# 3. Ploteo con ggraph
-set.seed(123)
-# Al haber filtrado el grafo, ahora sí podemos usar un layout de fuerzas como 'fr' (Fruchterman-Reingold)
-ggraph(grafo_visual, layout = "fr") + 
-  geom_edge_link(alpha = 0.2, color = "gray70") +
-  geom_node_point(aes(color = comunidad, size = grado), alpha = 0.9) + 
-  scale_size_continuous(range = c(1, 6), guide = "none") + 
+# Ploteo de la red
+# Se utiliza el layout "stress" (MDS) por su estabilidad computacional en grafos medianos
+ggraph(grafo_visual, layout = "stress") + 
+  # Transparencia de aristas mapeada a los usuarios compartidos (peso)
+  geom_edge_link(aes(alpha = weight), color = "gray70", show.legend = FALSE) +
+  # Tamaño del nodo por PageRank y color por Comunidad de Louvain
+  geom_node_point(aes(color = comunidad, size = pagerank), alpha = 0.9) + 
+  scale_size_continuous(range = c(1, 8), guide = "none") + 
   theme_graph() +
   labs(
-    title = "Ecosistema de Consumo durante el Mundial 2010",
-    subtitle = "Red filtrada por K-core >= 3 y coloreada mediante comunidades de Louvain"
+    title = "Ecosistema de Consumo en Amazon (Red de Productos)",
+    subtitle = "Tamaño: PageRank | N >= 2 usuarios en común | Núcleo K-core >= 3"
   ) +
-  theme(legend.position = "none") # ¡Esto elimina el monstruo de los números!
-```
-
-
+  theme(legend.position = "none")

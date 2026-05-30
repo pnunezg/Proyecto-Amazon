@@ -25,21 +25,7 @@ De acuerdo con los requisitos del proyecto...
 Interacción X: [Título descriptivo, ej. Optimización del layout del grafo]
 1. Prompt inicial:
 2. Código erróneo o ineficiente generado por la IA
-3. Crítica y Refinamiento (Validación Humana)
-4. Solución final
 :::
-
-**3. Crítica y Refinamiento (Validación Humana)**
-El `Anexo.qmd` generado por la IA contiene información irrelevante y redundante.
-
-**4. Solución final**
-Eliminé la cabecera YAML duplicada y los textos de relleno. Solo me he quedado con los cuatro puntos destacados.
-
-### Interacción 2: Funcion para hallar la longitud de un String
-
-
-cual es el equivalente de lenght() para Strings en r
-
 
 **1. Prompt inicial:**
 > *"cual es el equivalente de lenght() para Strings en r"*
@@ -65,9 +51,6 @@ str_length(texto)
 # Resultado: 6
 :::
 
-**3. Solución final**
-Cojo el str_length() para trabajar todo con tidyverse
-
 ### Interacción 3: Visualización del Criterio de Káiser
 
 **1. Prompt inicial:**´
@@ -87,7 +70,7 @@ fviz_eig(acp,
 
 ### Interacción 4: Semilla a usar
 
-**1. Prompt inicial:**´
+**1. Prompt inicial:**
 
 > *(Adjunté el pdf de la prácitca) "¿Qué semilla es la mejor para que todos los bloques de este proyecto?"*
 
@@ -103,4 +86,24 @@ Lo verá el profesor y sabrá inmediatamente que es una semilla de control, no u
 :::
 
 ### Interacción 5: 
+**1. Prompt inicial:**
+
+> *El proyecto me pide que no procese todo el dataset de golpe para evitar problemas de memoria, sino que filtre por un rango temporal. Uso data.table. Cómo filtro los datos para quedarme solo con las reseñas publicadas durante el Mundial de Fútbol de Sudáfrica 2010?*
+
+**2. Código generado por la IA:**
+fecha_inicio <- as.numeric(as.POSIXct("2010-06-11", tz="UTC"))
+fecha_fin <- as.numeric(as.POSIXct("2010-07-11", tz="UTC"))
+
+datos_filtrados <- datos_amazon[Time >= fecha_inicio & Time <= fecha_fin]
+
+### Interacción 6: 
+**1. Prompt inicial:**
+
+> *Cómo consigo las proyecciones de mis métricas en el espacio 2D generado por mis PC1 y PC2 para poder representarlas en un nuevo corrplot()?*
+
+**2. Código generado por la IA:**
+datos_sombra_2d <- acp$x[, 1:2] %*% t(acp$rotation[, 1:2])
+
+### Interacción 7: 
+
 
