@@ -11,4 +11,3 @@ library(ggraph)
 ```
 
 # Bloque III. Clasificación Basada en Enlaces (Link-based)
-
