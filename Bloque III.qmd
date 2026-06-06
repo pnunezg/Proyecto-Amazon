@@ -1,2 +1,14 @@
+```{r}
+#| label: setup
+#| message: false
+#| warning: false
+
+set.seed(123)
+library(tidyverse)
+library(igraph)    
+library(tidygraph) 
+library(ggraph)  
+```
+
 # Bloque III. Clasificación Basada en Enlaces (Link-based)
 

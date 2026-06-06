@@ -11,15 +11,21 @@ library(corrplot)
 ```
 
 ```{r}
+#| label: carga-datos
+
 datos_amazon <- fread("datos/Reviews.csv")
 ```
 
-Filtrado de datos aplicado al dataset original para reducir cardinalidad
+Filtrado de datos aplicado al dataset original para reducir cardinalidad. Me pareció una buena idea filtrar los productos en este espacio temporal ya que fue un gran mes para los españoles y al ser un periodo corto, iba a quitarme muchos datos.
 ```{r}
+#| label: filtrado-temporal
+
 fecha_inicio <- as.numeric(as.POSIXct("2010-06-11", tz="UTC"))
 fecha_fin <- as.numeric(as.POSIXct("2010-07-11", tz="UTC"))
 
 datos_filtrados <- datos_amazon[Time >= fecha_inicio & Time <= fecha_fin]
+
+names(datos_filtrados)
 ```
 
 # Bloque I. Análisis de Componentes Principales (PCA)
@@ -29,12 +35,14 @@ En esta primera fase, el objetivo es extraer las dimensiones latentes que define
 ## Creación de la tabla de métricas
 
 ```{r}
+#| label: pca-tabla-metricas
+
 tabla_metricas <- datos_filtrados |>
   group_by(ProductId) |>
   summarise(
     rating_promedio = mean(Score, na.rm = TRUE),
     numero_de_reseñas = n(),
-    #Como no hay columna de precio, se calcula de esta forma (dicho en clase)
+    #Como no hay columna de precio, se calcula de esta forma 
     votos_utiles = sum(HelpfulnessNumerator, na.rm = TRUE),
     votos_totales = sum(HelpfulnessDenominator, na.rm = TRUE),
     #Con este if_else prevengo posibles valores faltantes en caso de que los votos totales fuesen 0
@@ -51,7 +59,11 @@ tabla_metricas_sin_productID <- tabla_metricas |> select(-ProductId)
 ***
 ## Análisis de los datos
 
+### Correlación datos originales
 ```{r}
+#| label: pca-correlacion-original
+
+#Realizo el escalado para que las correlaciones sean correctamente calculadas y no se vean influenciadas por rangos de valores elevados
 tabla_metricas_sin_productID_escalado <- scale(tabla_metricas_sin_productID)
 
 #Calculo la correlación entre cada variable y la represento mediante corrplot
@@ -64,9 +76,14 @@ Se puede apreciar que las variables están **muy poco correlacionadas entre sí*
 
 ***
 
+### PCA
+
 He optado por representar el PCA en **2 componentes principales**, lo que permite una visualización directa y muy ilustrativa.
 
+
 ```{r}
+#| label: pca-calculo
+
 acp <- prcomp(tabla_metricas_sin_productID, center = TRUE, scale = TRUE)
 
 # Contribuciones a las dos primeras componentes
@@ -82,31 +99,50 @@ resumen_acp <- summary(acp)
 Por aclarar, la interpretación de las correlaciones esta hecha en base a las proyecciones en nuestro sistema 2D
 
 - **PC1 (Dim1) — Cantidad de Interacciones y Coste**. 
-En esta dimensión influyen positivamente el **precio**, el **número de reseñas** y la **longitud promedio del texto** ya que todos sus vectores apuntan con fuerza hacia la derecha (valores positivos en Dim1). Al observar los vectores, apreciamos que el número de reseñas y la longitud promedio del texto están totalmente correlacionadas (sugiriendo que cuantas más reseñas tenga un producto, más largos serán sus textos). El **precio** también acompaña al número de reseñas y la longitud promedio, formando un ángulo agudo con estas y, por tanto, estando correlacionado con ambas. Esta observación nos revela que, a mayor precio de un producto, mayor será el número y la longitud de las reseñas acerca de este. Finalmente, por puntualizar, se puede ver que  el rating promedio no aporta nada de valor este eje ya que es un vector prácticamente solo con componente vertical.
-En resumen, la Dimensión 1 captura principalmente el volumen de interacción de los usuarios y el coste del producto. Esto se puede traducir en que este eje captura la "popularidad" sumado a la exigencia de la crítica y que ambas, normalmente, se ven potenciadas por precios más elevados.
+En esta dimensión influyen positivamente el **precio**, el **número de reseñas** y la **longitud promedio del texto** ya que todos sus vectores apuntan con fuerza hacia la derecha (valores positivos en Dim1). Al observar los vectores, apreciamos que el número de reseñas y la longitud promedio del texto están totalmente correlacionadas (sugiriendo que cuantas más reseñas tenga un producto, más largos serán sus textos). El precio también acompaña al número de reseñas y la longitud promedio, formando un ángulo agudo con estas y, por tanto, estando correlacionado con ambas. Esta observación nos revela que, a mayor precio de un producto, mayor será el número y la longitud de las reseñas acerca de este. Finalmente, por puntualizar, se puede ver que  el **rating promedio** no aporta nada de valor este eje, ya que es un vector, prácticamente, solo con componente vertical.
+En resumen, la Dimensión 1 captura principalmente el volumen de interacción de los usuarios y el coste del producto. Esto se puede traducir en que este eje captura la "popularidad" de un producto, que va ligada a la longitud de su reseña y que ambas, normalmente, se ven potenciadas por precios más elevados.
 
 - **PC2 (Dim2) — Calidad del producto** 
 El **rating promedio** apenas influye en la Dim1, pero es la variable que domina y da sentido, casi en exclusiva, a la Dim2 (flecha roja intensa apuntando casi verticalmente hacia abajo).
-Observando el gráfico generado se ve que las otras métricas influyen menos en este eje (tienen una componente horizontal más dominante) pero sí que son relevantes y aportan algo de valor real.
-En cuanto a las interacciones entre estas, el rating promedio está correlacionado positivamente con el **precio** (a mayor precio, mayor rating promedio tendrá) y negativamente correlacionado con la **longitud promedio del texto** y con el **número de reseñas** (a mayor calidad, menor número y longitud de reseñas).
-En resumen, la Dimensión 2 captura la calidad de los productos. Se puede establecer que, de vez en cuando, a mayor precio, mayor será la calidad. Por tanto, al subir el precio, menos gente tiene acceso a estos productos, por lo tendrá un menor número de reseñas y menor longitud de estas (ya que hay menos quejas acerca del producto).
+Observando el gráfico generado, se ve que las otras métricas influyen menos en este eje (tienen una componente horizontal más dominante) pero sí que son relevantes y aportan valor real.
+En cuanto a las interacciones entre las componentes, el rating promedio está correlacionado positivamente con el **precio** (a mayor precio, mayor rating promedio tendrá) y negativamente correlacionado con la **longitud promedio del texto** y con el **número de reseñas** (a mayor calidad, menor número y longitud de las reseñas).
+En resumen, la Dimensión 2 captura la calidad de los productos. Se puede establecer que, de vez en cuando, a mayor precio, mayor será la calidad. En consecuencia, al subir el precio, menos gente tiene acceso a estos productos, por lo tendrán un menor número y menor longitud de reseñas (ya que hay menos opiniones acerca del producto).
 
+
+## Visualización de las correlaciones del biplot en la base original
+
+En este nuevo espacio generado, las componentes son perpendiculares entre sí (ortogonales) porque esa es la premisa para maximizar la varianza. Por tanto, calcular la correlación entre los datos en este espacio no tiene sentido, ya que saldrían completamente incorrelacionadas.
+
+Aquí extraigo el campo `acp$x` (conocido como **Scores** o puntuaciones), que me indica las coordenadas de mis observaciones dentro del nuevo espacio de componentes principales ($PC_i$). 
 ```{r}
-# 1. Reconstruimos los datos usando SOLO las Dimensiones 1 y 2 (Generamos la sombra 2D)
-datos_sombra_2d <- acp$x[, 1:2] %*% t(acp$rotation[, 1:2])
+#| label: pca-coordenadas
 
-# 2. Usamos TU código exacto sobre estos datos
-cor(datos_sombra_2d) |>
+coordenadas_datos_en_PCA <- acp$x
+coordenadas_datos_2D_en_PCA <- coordenadas_datos_en_PCA[, 1:2]
+```
+
+Para analizar las correlaciones del modelo hay que realizar un cambio de base a la canónica original, utilizando la matriz de rotación o *loadings* (`acp$rotation`). 
+
+Como hacemos el cálculo con las dos primeras componentes (`acp$x[, 1:2]`), al multiplicar por la transpuesta de sus pesos (`t(acp$rotation[, 1:2])`), lo que obtenemos en `reconstruccion_pca_canónica` obtenemos una **reconstrucción de rango 2**. 
+```{r}
+#| label: pca-reconstruccion-base-canonica
+
+matriz_cambio_base_PCA_a_canonica <- t(acp$rotation[, 1:2])
+reconstruccion_pca_canónica <- coordenadas_datos_2D_en_PCA %*% matriz_cambio_base_PCA_a_canonica
+
+cor(reconstruccion_pca_canónica) |>
   corrplot(method = "number", type = "upper",
            col = colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))(200))
 ```
-En este gráfico que relaciona las correlaciones se puede ver ilustradas las correlaciones a las que me refería cuando proyectamos nuestras métricas en un espacio bidimensional.
+En este gráfico se pueden observar las correlaciones de las que hablaba anteriormente. Al verlo de forma númerica puede quedar más claro que explicado con el `biplot()`
 
 ***
 
-### Justificación de la retención de varianza — Scree Plot
+### Varianza explicada
 
 ```{r}
+#| label: pca-varianza-explicada
+
 # Varianza explicada
 fviz_eig(acp,
          addlabels = TRUE,
@@ -128,8 +164,11 @@ Proyectar los datos en dos dimensiones captura una varianza aproximada del **55%
 ### Criterio de Kaiser
 
 ```{r}
+#| label: pca-criterio-kaiser
+
 # Autovalores
 # Mediante la documentación en r averiguo el campo choice de esta función
+# Además, se le pueden acoplar capas de ggplot 2 como hemos vusto a lo largo del curso por lo que pongo una recta y = 1 para ver el criterio de káiser
 fviz_eig(acp,
          choice = "eigenvalue",
          addlabels = TRUE,
@@ -139,4 +178,10 @@ fviz_eig(acp,
   geom_hline(yintercept = 1, linetype = "dashed", color = "red", linewidth = 1)
 ```
 
-**El criterio de Kaiser establece que solo aportan valor real las componentes cuyo autovalor asociado sea mayor que 1.** Dado que PC1 y PC2 superan dicho umbral y PC3 queda por debajo, se retienen las 2 primeras componentes. Aunque con 3 se capturaría el 79% de la varianza, el criterio de Kaiser penaliza PC3 al no aportar más información de la que contendría una variable original estandarizada (con varianza/autovalor 1). El problema con este criterio es que cuando tiene pocas variables tiende a retener muy pocas. Aquí se puede apreciar muy bien esto mismo ya que no hay un claro codo pero el criterio establece que solo nos quedemos con las dos primeras dimensiones.
+**El criterio de Kaiser establece que solo aportan valor real las componentes cuyo autovalor asociado sea mayor que 1.** Dado que PC1 y PC2 superan dicho umbral y PC3 queda por debajo, se retienen las 2 primeras componentes. Aunque con 3 se capturaría el 79% de la varianza, el criterio de Kaiser penaliza PC3 al no aportar más información de la que contendría una variable original estandarizada (originalmente todas las componentes tienen varianza/autovalor 1 ya que fueron sometidas a un proceso de normalización con media 0 y desviación típica 1). El problema con este criterio es que cuando tiene pocas variables tiende a retener muy pocas. Aquí se puede apreciar muy bien esto mismo ya que no hay un claro codo pero el criterio establece que solo nos quedemos con las dos primeras dimensiones.
+
+```{r}
+saveRDS(tabla_metricas, "datos/tabla_metricas.rds")
+saveRDS(datos_filtrados, "datos/datos_filtrados.rds")
+```
+

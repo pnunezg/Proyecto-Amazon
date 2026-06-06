@@ -11,7 +11,7 @@ A continuación, se detallan las interacciones más relevantes ordenadas por los
 **1. Prompt inicial:**
 > *"dame un archivo de anexo que me sirva para ir rellenando las consultas realizadas a la IA tal y como pone en el PDF"*
 
-**2. Código generado por la IA:**
+**2. Respuesta de la IA:**
 
 Le he quitado todos los símbolos especiales que me devolvió la IA para que se vea más claro:
 
@@ -24,40 +24,27 @@ De acuerdo con los requisitos del proyecto...
 [Plantilla para copiar y pegar en cada nueva consulta]
 Interacción X: [Título descriptivo, ej. Optimización del layout del grafo]
 1. Prompt inicial:
-2. Código erróneo o ineficiente generado por la IA
+2. Respuesta de la IA:
+3. Crítica humana y validación:
+4. Solución final:
+
 :::
 
-**1. Prompt inicial:**
-> *"cual es el equivalente de lenght() para Strings en r"*
+**3. Crítica humana y validación:**
 
-**2. Código generado por la IA:**
+Me pareció correcto el anexo ya que daba una breve introducción bastante explicativa y me decía claramente que puntos tratar.
 
-::: {.callout-note appearance="simple"}
-1. Con R Base (No requiere cargar librerías)
-La función nativa de R es nchar() (del inglés number of characters).
+**4. Solución final:**
 
-R
-texto <- "Amazon"
-nchar(texto)
-# Resultado: 6
-2. Con el paquete stringr (Incluido en tidyverse)
-La función equivalente es str_length().
+Modifiqué un par de cosas y lo usé muy similar al que pasó la IA.
 
-R
-library(tidyverse)
-
-texto <- "Amazon"
-str_length(texto)
-# Resultado: 6
-:::
-
-### Interacción 3: Visualización del Criterio de Káiser
+### Interacción 2: Visualización del Criterio de Káiser
 
 **1. Prompt inicial:**´
 
 > *"fviz_eig(acp, choice = eigenvalue, addlabels = TRUE, ylim = c(0, 2), title = Scree Plot - Criterio de Kaiser) como le añado una linea que pase por y = 1"*
 
-**2. Código generado por la IA:**
+**2. Respuesta de la IA:**
 
 ::: {.callout-note appearance="simple"}
 fviz_eig(acp,
@@ -68,13 +55,21 @@ fviz_eig(acp,
   geom_hline(yintercept = 1, linetype = "dashed", color = "red", linewidth = 1)
 :::
 
-### Interacción 4: Semilla a usar
+**3. Crítica humana y validación:**
+
+Sabía que era correcto ya que se podía aplicar por capas como ggplot(), ggraph()... Lo probé y era correcto
+
+**4. Solución final:**
+
+Lo implementé en mi codigo ya que solo era añadir una línea
+
+### Interacción 3: Semilla a usar
 
 **1. Prompt inicial:**
 
 > *(Adjunté el pdf de la prácitca) "¿Qué semilla es la mejor para que todos los bloques de este proyecto?"*
 
-**2. Código generado por la IA:**
+**2. Respuesta de la IA:**
 
 ::: {.callout-note appearance="simple"}
 Leyendo la rúbrica, lo más importante es que el set.seed sea consistente en todos los bloques ya que uno de los requisitos clave es la reproducibilidad.
@@ -85,25 +80,114 @@ Es el más estándar y reconocible académicamente
 Lo verá el profesor y sabrá inmediatamente que es una semilla de control, no un número aleatorio
 :::
 
-### Interacción 5: 
+**3. Crítica humana y validación:**
+
+
+**4. Solución final:**
+
+### Interacción 4: Filtrado de datos
 **1. Prompt inicial:**
 
 > *El proyecto me pide que no procese todo el dataset de golpe para evitar problemas de memoria, sino que filtre por un rango temporal. Uso data.table. Cómo filtro los datos para quedarme solo con las reseñas publicadas durante el Mundial de Fútbol de Sudáfrica 2010?*
 
-**2. Código generado por la IA:**
+**2. Respuesta de la IA:**
+
+::: {.callout-note appearance="simple"}
 fecha_inicio <- as.numeric(as.POSIXct("2010-06-11", tz="UTC"))
 fecha_fin <- as.numeric(as.POSIXct("2010-07-11", tz="UTC"))
 
 datos_filtrados <- datos_amazon[Time >= fecha_inicio & Time <= fecha_fin]
+:::
 
-### Interacción 6: 
+**3. Crítica humana y validación:**
+
+
+**4. Solución final:**
+
+### Interacción 5: Compartir objetos entre bloques de Quarto
+
+**1. Prompt inicial:**
+> *Tengo un proyecto Quarto con varios .qmd separados. El Bloque II necesita `tabla_metricas` y `datos_filtrados` que se crearon en el Bloque I, pero al renderizar me da problemas*
+
+**2. Respuesta de la IA:**
+
+::: {.callout-note appearance="simple"}
+Al final de Bloque I.qmd:
+saveRDS(tabla_metricas, "datos/tabla_metricas.rds")
+saveRDS(datos_filtrados, "datos/datos_filtrados.rds")
+
+Al inicio del setup de Bloque II.qmd:
+tabla_metricas  <- readRDS("datos/tabla_metricas.rds")
+datos_filtrados <- readRDS("datos/datos_filtrados.rds")
+:::
+
+**3. Crítica humana y validación:**
+
+
+**4. Solución final:**
+
+### Interacción 6: Correlaciones
 **1. Prompt inicial:**
 
-> *Cómo consigo las proyecciones de mis métricas en el espacio 2D generado por mis PC1 y PC2 para poder representarlas en un nuevo corrplot()?*
+> *como puedo hacer para ver hallar los vectores de mis datos en 2 dimensiones en PCA en mi base original?*
 
-**2. Código generado por la IA:**
+**2. Respuesta de la IA:**
+
+::: {.callout-note appearance="simple"}
 datos_sombra_2d <- acp$x[, 1:2] %*% t(acp$rotation[, 1:2])
+:::
 
-### Interacción 7: 
+**3. Crítica humana y validación:**
+
+
+**4. Solución final:**
+
+### Interacción 7: Identificar nodos importantes
+
+**1. Prompt inicial:**
+> *como identifico que nodos son importantes en mi red? Tengo métricas de centralidad calculadas (degree, betweenness,   closeness, pagerank)*
+
+**2. Respuesta de la IA:**
+
+::: {.callout-note appearance="simple"}
+es_hub = if_else(degree > quantile(degree, 0.90), 1, 0)
+:::
+
+**3. Crítica humana y validación:**
+
+
+**4. Solución final:**
+
+### Interacción 8: Elección del parámetro N
+
+**1. Prompt inicial:**
+
+> *"(Le pase mi código) El enunciado me pide justificar la eleccion de N usuarios compartidos basándome en la densidad del grafo resultante. Dame una funcion que calcule los vertices, aristas y densidad según el N que yo le pase para poder evaluarlo"*
+
+**2. Respuesta de la IA:**
+
+::: {.callout-note appearance="simple"}
+evaluar_red_N <- function(umbral_N) {
+  aristas_temp <- todas_las_aristas |> filter(usuarios_compartidos >= umbral_N)
+  nodos_temp <- tabla_metricas |> filter(ProductId %in% unique(c(aristas_temp$from, aristas_temp$to)))
+  g_temp <- graph_from_data_frame(d = aristas_temp, vertices = nodos_temp, directed = FALSE)
+  
+  return(data.frame(
+    Umbral_N = umbral_N, Nodos = vcount(g_temp),
+    Aristas = ecount(g_temp), Densidad = round(edge_density(g_temp), 5)
+  ))
+}
+
+tabla_sensibilidad <- map_df(1:5, evaluar_red_N)
+:::
+
+**3. Crítica humana y validación:**
+
+> *El cógido de la IA era correcto y pude evaluar todas las N posibles en el rango que yo quise (en este de N = 1 a N = 5)*
+
+**4. Solución final:**
+
+> *Basándome en la tabla generada, cogí **$N=4$** como el hiperparámetro óptimo. La cogí por ser la opción más equilibrada en cuanto a número de nodos - densidad. Las elecciones de N más grandes daban una red muy reducida en cuanto a nodos. Me pareció que era elección perfecta, sobre a la hora de representarlo, para que se viesen todas las aristas correctamente.
+
 
 

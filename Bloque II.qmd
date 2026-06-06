@@ -4,79 +4,226 @@
 #| warning: false
 
 set.seed(123)
+library(tidyverse)
 library(igraph)    
 library(tidygraph) 
 library(ggraph)    
+library(ggforce)
+
+tabla_metricas  <- readRDS("datos/tabla_metricas.rds")
+datos_filtrados <- readRDS("datos/datos_filtrados.rds")  
+
+N = 4
 ```
+*Basándome en la tabla generada, cogí **$N=4$** como el hiperparámetro óptimo. La cogí por ser la opción más equilibrada en cuanto a número de nodos - densidad. Más abajo hay una función que enseña cuáles eran las distintas combinaciones según la **N** escogida. También pensé en cogerla para poder representar la red y que se viese cierta complejidad en las comunidades pero que se viesen las aristas que relacionan los nodos de estas de una forma relativamente clara 
 
-## Bloque II. Análisis de Redes Sociales (SNA)
+# Bloque II: Análisis de Redes Sociales (SNA)
 
-Una vez reducida la dimensionalidad, pasaréis a modelar el ecosistema de consumo como una red
-compleja bidimensional.
+## Pre-procesamiento de la información
 
+En primer lugar, aplico un **pre-procesamiento** a los datos para poder armar el grafo bien. Consta de los siguientes pasos:
 
-## Bloque II. Análisis de Redes Sociales (SNA)
+### Aristas
+- Selecciono el `UserId` y `ProductId` de `datos_filtrados` (el dataset de amazon filtrado en el mes del mundial 2010) que me servirán para las aristas. Esto lo guardo en una variable llamada `reseña_base`
 
-Una vez extraídas las dimensiones latentes en el Bloque I, pasamos a modelar el ecosistema de consumo como una red compleja. En este enfoque, asumimos que los productos no existen de forma aislada: su relevancia y éxito también vienen determinados por cómo los usuarios navegan y consumen dentro de la plataforma.
+- Hago un `inner_join()` de `reseña_base` consigo misma mediante el `User_Id`, lo que sería un self_join en Bases de Datos. Esto lo hago para tener todos los productos reseñados por un usuario. Le aplico ese filtro para quitarme las relaciones A-A y las B-A (porque ya tengo las A-B). De forma que me quede solo con las que me importan que son las A-B.
 
-### 1. Construcción de la Red y Justificación del Umbral (N)
+- **Creo las aristas.** Si antes tenía parejas de productos asociados a usuarios, con el agrupamiento que hago, me quedo con las personas que votaron tanto por el producto x como por el producto y. Después condenso la información quedándome con la cantidad de filas que me dió el agrupamiento. Aplico el filtro de N usuarios en común para cumplir con el enunciado y renombro las columnas `ProductId.x` y `ProductId.y` a `from` y `to` respectivamente que la creación del grafo funcione sin problemas.
 
-Para construir nuestra red de productos, partimos de un grafo bipartito (Usuarios y Productos). Al realizar la proyección unimodal, conectamos dos productos si han sido reseñados por los mismos usuarios. 
-
-Dado el volumen masivo de datos de Amazon, conectar productos que comparten un solo usuario ($N=1$) generaría un grafo excesivamente denso (conocido visualmente como "bola de pelo"), lo cual es ineficiente computacionalmente y aporta poco valor analítico. Por ello, **he optado por establecer un umbral de coparticipación de $N \ge 2$**. Esto asegura que las aristas representen verdaderos patrones de consumo conjunto y reduce drásticamente la densidad de la red, eliminando conexiones ruidosas o causales.
 
 ```{r}
-# 1. Blindamos los identificadores añadiendo prefijos para evitar colisiones
-dt_red <- datos_filtrados[, .(
-  UserNode = paste0("U_", UserId), 
-  ProductNode = paste0("P_", ProductId)
-)]
+#| label: sna-preprocesamiento-aristas
 
-# 2. Creamos el grafo bipartito y lo proyectamos
-grafo_bipartito <- graph_from_data_frame(dt_red, directed = FALSE)
-V(grafo_bipartito)$type <- grepl("^U_", V(grafo_bipartito)$name)
+# Aquí comienza el pre procesamiento para la carga de las aristas.
+reseñas_base <- datos_filtrados |> select(UserId, ProductId) |> distinct()
 
-# La proyección 2 corresponde a los productos (type = FALSE)
-proyecciones <- bipartite_projection(grafo_bipartito)
-grafo_productos <- proyecciones$proj2
+# Mediante la documentación de la función veo el campo relationship 
+coincidencias <- reseñas_base |> 
+  inner_join(reseñas_base, by = "UserId", relationship = "many-to-many") |>
+  filter(ProductId.x < ProductId.y)
 
-# Convertimos a tbl_graph para aprovechar la manipulación de datos estructurada
-grafo_tidy <- as_tbl_graph(grafo_productos) |>
+# Creo las columnas from y to para que el grafo se cree correctamente
+aristas <- coincidencias |> 
+  group_by(ProductId.x, ProductId.y) |> 
+  summarise(usuarios_compartidos = n(), .groups = "drop") |>
+  filter(usuarios_compartidos >= N) |>
+  rename(from = ProductId.x, to = ProductId.y) 
+```
+
+### Vértices
+- De mi tabla aristas saco todos los Ids tanto de `from` como de `to`. Le aplico `distinct()` para quedarme con todos distintos que relacionan mis aristas.
+
+- **Creo mis nodos** (con toda la información de la tabla de métricas del Bloque I) y los filtro haciendo que el Id tenga que estar en los Ids que saqué en el paso anterior.
+```{r}
+#| label: sna-preprocesamiento-nodos
+
+productos_conectados <- unique(c(aristas$from, aristas$to))
+
+# Como quiero que mis nodos tengan todos los datos de tabla_metricas le aplico un filto donde solo selecciono aquellos que estén en mis aristas
+nodos <- tabla_metricas |>
+  filter(ProductId %in% productos_conectados)
+
+```
+
+### Función explicadora de N
+
+Esta función (dada por la IA, como pone en el anexo) me devuelve los nodos y densidad de las distintas redes que se crearían modificando el hiperparámetro N.
+
+```{r}
+#| label: sna-analisis-sensibilidad
+
+todas_las_aristas <- coincidencias |> 
+  group_by(ProductId.x, ProductId.y) |> 
+  summarise(usuarios_compartidos = n(), .groups = "drop") |>
+  rename(from = ProductId.x, to = ProductId.y)
+
+evaluar_red_N <- function(umbral_N) {
   
-  # A. FILTRADO DE ARISTAS (Umbral N >= 2)
-  activate(edges) |>
-  filter(weight >= 2) |> 
+  aristas_temp <- todas_las_aristas |> 
+    filter(usuarios_compartidos >= umbral_N)
   
-  # B. CÁLCULO DE MÉTRICAS TOPOLÓGICAS
+  productos_temp <- unique(c(aristas_temp$from, aristas_temp$to))
+  nodos_temp <- tabla_metricas |> filter(ProductId %in% productos_temp)
+  
+  g_temp <- graph_from_data_frame(d = aristas_temp, vertices = nodos_temp, directed = FALSE)
+  
+  return(data.frame(
+    Umbral_N = umbral_N,
+    Nodos = vcount(g_temp),
+    Aristas = ecount(g_temp),
+    Densidad = round(edge_density(g_temp), 5)
+  ))
+}
+
+tabla_sensibilidad <- map_df(1:5, evaluar_red_N)
+
+tabla_sensibilidad
+```
+
+## Creación del grafo
+
+Como ya me he encargado de tratar la información y de separarlas en nodos y aristas, solo tengo que usar la función `graph_from_data_frame()` para crear el grafo. 
+Como apunte, no hace falta aplicar `igraph::simplify()` para quitar aristas duplicadas y lazos porque eso ya se solucionó en el pre-procesamiento (con el filtrado para evitar relaciones redundantes A-A y B-A).
+
+```{r}
+#| label: sna-creacion-grafo
+
+# No tiene sentido crearlo dirigido ya compartir N usuarios es bidireccional, no comparte uno a otro
+g_amazon <- graph_from_data_frame(d = aristas, vertices = nodos, directed = FALSE)
+
+
+# Imprimo el número de vértices y de aristas para tener cierto control del grafo creado.
+vcount(g_amazon)
+ecount(g_amazon)
+```
+
+
+## Métricas de centralidad
+
+Aplico alunas métricas de centralidad que guardo en cada uno de los nodos que me dan información muy relevante:
+
+- `centrality_degree()`:	Popularidad / Actividad. Cuenta el nº de conexiones directas. 
+
+- `centrality_betweenness()`:	Control / Intermediación.	Calcula la capacidad de ser un puente entre grupos.
+
+- `centrality_closeness()`:	Eficiencia / Rapidez. Calcula la cercanía media de un nodo a todos los demás.
+
+- `centrality_pagerank()`:	Influencia / Prestigio. Mide la calidad de las conexiones (no solo cuántas, sino con quién).
+
+Además, mediante `as.factor(group_louvain())` calculamos las comunidades que hay en nuestro grafo. Esto será útil a la hora de la representación.
+
+```{r}
+#| label: sna-metricas-centralidad
+
+g_amazon <- g_amazon |> 
+  as_tbl_graph() |>
   activate(nodes) |>
-  # Limpiamos los nodos que se hayan quedado aislados tras el filtrado de aristas
-  filter(!node_is_isolated()) |> 
   mutate(
-    pagerank = centrality_pagerank(),
+    degree = centrality_degree(),
     betweenness = centrality_betweenness(),
-    grado = centrality_degree(),
-    comunidad = as.factor(group_louvain()),
-    
-    # Calculamos el K-Core para el filtrado visual posterior
-    k_core = node_coreness()
+    closeness = centrality_closeness(),
+    pagerank = centrality_pagerank(),
+    comunidad = as.factor(group_louvain())
   )
 
-# Filtrado inteligente para visualización
-grafo_visual <- grafo_tidy |>
-  activate(nodes) |>
-  filter(k_core >= 3)
+g_amazon |> 
+  as_tibble() |>
+  select(name, degree, betweenness, closeness, pagerank, comunidad) |>
+  arrange(desc(pagerank))
 
-# Ploteo de la red
-# Se utiliza el layout "stress" (MDS) por su estabilidad computacional en grafos medianos
-ggraph(grafo_visual, layout = "stress") + 
-  # Transparencia de aristas mapeada a los usuarios compartidos (peso)
-  geom_edge_link(aes(alpha = weight), color = "gray70", show.legend = FALSE) +
-  # Tamaño del nodo por PageRank y color por Comunidad de Louvain
-  geom_node_point(aes(color = comunidad, size = pagerank), alpha = 0.9) + 
-  scale_size_continuous(range = c(1, 8), guide = "none") + 
-  theme_graph() +
+```
+
+## Clasificación micro de la red
+
+En este bloque de código calculo si mis nodos son relevantes según las medidas anteriormente calculadas. Si son relevantes, se les pone 1, si no lo son, un 0. Clasifico viendo si la medida x es mayor que el quantil 90. Esta es una manera muy robusta de ver qué nodos son los:
+
+- **Hubs:** nodos con muchas conexiones directas
+- **Puentes:** nodos que conectan grupos distintos 
+- **Centrales:** nodos cercanos a todos los demás 
+- **Faros:** nodos influyentes por la calidad de sus vecinos
+
+```{r}
+#| label: sna-clasificacion-nodos
+
+# Según la IA debo usar el percentil
+g_amazon <- g_amazon |>
+  activate(nodes) |>
+  mutate(
+    es_hub     = if_else(degree > quantile(degree, 0.90), 1, 0),
+    es_puente  = if_else(betweenness > quantile(betweenness, 0.90), 1, 0),
+    es_central  = if_else(closeness > quantile(closeness, 0.90), 1, 0),
+    es_faro    = if_else(pagerank > quantile(pagerank, 0.90), 1, 0)
+  )
+
+# Visualización de la tabla de la clasificación micro de la red
+g_amazon |>
+  as_tibble() |>
+  filter(es_hub | es_faro == 1 | es_puente == 1 | es_central == 1) |>
+  select(name, es_hub, es_faro, es_puente, es_central, comunidad) |>
+  arrange(comunidad)
+```
+
+## Visualización del grafo
+
+
+### Selección de las comunidades más importantes
+
+Para no representar todas las comunidades que hay en nuestro grafo, cojo las 3 de mayor calidad.
+
+- En primer lugar lo que hago es agrupar por comunidades (anteriormente calculadas) y las condenso con el pagerank total de cada una de ellas (parámetro usado para representar su calidad). Una vez lo tengo, selecciono las 3 mayores y me quedo con los valores mediannte `pull()` que me devuelve un vector simple.
+
+- Luego, me quedo solo con los nodos que pertenezcan a las 3 mejores comunidades, filtrando los nodos que se encuentren en ese vector lógico.
+```{r}
+#| label: sna-visualizacion
+
+top3_comunidades <- g_amazon |>
+  as_tibble() |>
+  group_by(comunidad) |>
+  summarise(pagerank_total = sum(pagerank)) |>
+  arrange(desc(pagerank_total)) |>
+  slice(1:3) |>
+  pull(comunidad)
+
+grafo_top3 <- g_amazon |>
+  as_tbl_graph() |>
+  activate(nodes) |>
+  filter(comunidad %in% top3_comunidades)
+```
+
+### Visualización del grafo
+
+Una vez he calculado las 3 mejores componentes las muestri con `ggraph()`
+```{r}
+
+ggraph(grafo_top3, layout = "stress") + 
+  geom_edge_link(edge_width = 0.05, color = "gray50")  +
+  geom_node_point(aes(color = comunidad), size = 6, alpha = 0.9, show.legend = TRUE) +
+  theme_graph(base_family = "sans") +
   labs(
-    title = "Ecosistema de Consumo en Amazon (Red de Productos)",
-    subtitle = "Tamaño: PageRank | N >= 2 usuarios en común | Núcleo K-core >= 3"
-  ) +
-  theme(legend.position = "none")
+    title = "Top 3 Comunidades de Co-compra en Amazon",
+    subtitle = "Durante el Mundial Sudáfrica 2010"
+  )
+```
+
+
+

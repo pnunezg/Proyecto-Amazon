@@ -16,9 +16,7 @@
 # Outputs
 *.html
 *.pdf
-*.png
 
-# Datos
-*.csv
-/datos/
+# Datos brutos (pesados)
+/datos/*.csv
 **/*.quarto_ipynb
