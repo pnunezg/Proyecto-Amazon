@@ -43,11 +43,13 @@ coincidencias <- reseñas_base |>
   filter(ProductId.x < ProductId.y)
 
 # Creo las columnas from y to para que el grafo se cree correctamente
-aristas <- coincidencias |> 
+aristas_reutilizables <- coincidencias |> 
   group_by(ProductId.x, ProductId.y) |> 
   summarise(usuarios_compartidos = n(), .groups = "drop") |>
-  filter(usuarios_compartidos >= N) |>
   rename(from = ProductId.x, to = ProductId.y) 
+
+aristas <-   aristas_reutilizables |>
+  filter(usuarios_compartidos >= N) 
 ```
 
 ### Vértices
@@ -59,8 +61,10 @@ aristas <- coincidencias |>
 
 productos_conectados <- unique(c(aristas$from, aristas$to))
 
+nodos_reutilizables <- tabla_metricas
+
 # Como quiero que mis nodos tengan todos los datos de tabla_metricas le aplico un filto donde solo selecciono aquellos que estén en mis aristas
-nodos <- tabla_metricas |>
+nodos <- nodos_reutilizables |>
   filter(ProductId %in% productos_conectados)
 
 ```
@@ -72,14 +76,9 @@ Esta función (dada por la IA, como pone en el anexo) me devuelve los nodos y de
 ```{r}
 #| label: sna-analisis-sensibilidad
 
-todas_las_aristas <- coincidencias |> 
-  group_by(ProductId.x, ProductId.y) |> 
-  summarise(usuarios_compartidos = n(), .groups = "drop") |>
-  rename(from = ProductId.x, to = ProductId.y)
-
 evaluar_red_N <- function(umbral_N) {
   
-  aristas_temp <- todas_las_aristas |> 
+  aristas_temp <- aristas_reutilizables |> 
     filter(usuarios_compartidos >= umbral_N)
   
   productos_temp <- unique(c(aristas_temp$from, aristas_temp$to))
@@ -169,16 +168,16 @@ En este bloque de código calculo si mis nodos son relevantes según las medidas
 g_amazon <- g_amazon |>
   activate(nodes) |>
   mutate(
-    es_hub     = if_else(degree > quantile(degree, 0.90), 1, 0),
-    es_puente  = if_else(betweenness > quantile(betweenness, 0.90), 1, 0),
-    es_central  = if_else(closeness > quantile(closeness, 0.90), 1, 0),
-    es_faro    = if_else(pagerank > quantile(pagerank, 0.90), 1, 0)
+    es_hub     = if_else(degree >= quantile(degree, 0.90), 1, 0),
+    es_puente  = if_else(betweenness >= quantile(betweenness, 0.90), 1, 0),
+    es_central  = if_else(closeness >= quantile(closeness, 0.90), 1, 0),
+    es_faro    = if_else(pagerank >= quantile(pagerank, 0.90), 1, 0)
   )
 
 # Visualización de la tabla de la clasificación micro de la red
 g_amazon |>
   as_tibble() |>
-  filter(es_hub | es_faro == 1 | es_puente == 1 | es_central == 1) |>
+  filter(es_hub == 1 | es_faro == 1 | es_puente == 1 | es_central == 1) |>
   select(name, es_hub, es_faro, es_puente, es_central, comunidad) |>
   arrange(comunidad)
 ```
@@ -192,7 +191,7 @@ Para no representar todas las comunidades que hay en nuestro grafo, cojo las 3 d
 
 - En primer lugar lo que hago es agrupar por comunidades (anteriormente calculadas) y las condenso con el pagerank total de cada una de ellas (parámetro usado para representar su calidad). Una vez lo tengo, selecciono las 3 mayores y me quedo con los valores mediannte `pull()` que me devuelve un vector simple.
 
-- Luego, me quedo solo con los nodos que pertenezcan a las 3 mejores comunidades, filtrando los nodos que se encuentren en ese vector lógico.
+- Luego, me quedo solo con los nodos que pertenezcan a las 3 mejores comunidades, filtrando los nodos que se encuentren en ese vector de factores.
 ```{r}
 #| label: sna-visualizacion
 
@@ -216,14 +215,13 @@ Una vez he calculado las 3 mejores componentes las muestri con `ggraph()`
 ```{r}
 
 ggraph(grafo_top3, layout = "stress") + 
-  geom_edge_link(edge_width = 0.05, color = "gray50")  +
-  geom_node_point(aes(color = comunidad), size = 6, alpha = 0.9, show.legend = TRUE) +
+  geom_edge_link(edge_width = 0.2, color = "gray50")  +
+  geom_node_point(aes(color = comunidad), size = 4, alpha = 0.9, show.legend = TRUE) +
   theme_graph(base_family = "sans") +
   labs(
     title = "Top 3 Comunidades de Co-compra en Amazon",
     subtitle = "Durante el Mundial Sudáfrica 2010"
   )
 ```
-
 
 

@@ -4,6 +4,7 @@ De acuerdo con los requisitos del proyecto, esta sección documenta el uso de he
 
 A continuación, se detallan las interacciones más relevantes ordenadas por los bloques del proyecto.
 
+
 ## Fase de Preparación
 
 ### Interacción 1: Creación de la estructura del Anexo
@@ -57,7 +58,7 @@ fviz_eig(acp,
 
 **3. Crítica humana y validación:**
 
-Sabía que era correcto ya que se podía aplicar por capas como ggplot(), ggraph()... Lo probé y era correcto
+Sabía que era correcto ya que se podía aplicar por capas como ggplot(), ggraph()... Lo probé y estaba bien.
 
 **4. Solución final:**
 
@@ -81,9 +82,10 @@ Lo verá el profesor y sabrá inmediatamente que es una semilla de control, no u
 :::
 
 **3. Crítica humana y validación:**
-
+Pese a que el profesor usa la semilla 42, ambas sirven de lo mismo (aseguran que los números sean pseudoaletorios mediante esta) así que, como sirven para lo mismo, me quede con la respuesta de la IA.
 
 **4. Solución final:**
+La implementé en mi código en todas las cargas de librerías.
 
 ### Interacción 4: Filtrado de datos
 **1. Prompt inicial:**
@@ -100,9 +102,10 @@ datos_filtrados <- datos_amazon[Time >= fecha_inicio & Time <= fecha_fin]
 :::
 
 **3. Crítica humana y validación:**
-
+Las fechas eran correctas y representaban lo que yo quería.
 
 **4. Solución final:**
+Lo implementé como filrado en mi código.
 
 ### Interacción 5: Compartir objetos entre bloques de Quarto
 
@@ -122,9 +125,10 @@ datos_filtrados <- readRDS("datos/datos_filtrados.rds")
 :::
 
 **3. Crítica humana y validación:**
-
+No se si sería la mejor pero era una manera eficiente de guardar los archivos necesarios. Me servía además para el git.
 
 **4. Solución final:**
+Lo implementé en todas las secciones de cargas de librerías.
 
 ### Interacción 6: Correlaciones
 **1. Prompt inicial:**
@@ -138,31 +142,33 @@ datos_sombra_2d <- acp$x[, 1:2] %*% t(acp$rotation[, 1:2])
 :::
 
 **3. Crítica humana y validación:**
-
+Me decía de hacer el producto matricial de las componentes en el espacio nuevo por la traspuesta de la matriz de cambio de base para poder hallar las nuevas coordenadas. Era correcto porque así se cambia de bases en álgebra lineal.
 
 **4. Solución final:**
+Lo implementé en mi código junto al `corrplot()` para poder representarlas
 
 ### Interacción 7: Identificar nodos importantes
 
 **1. Prompt inicial:**
-> *como identifico que nodos son importantes en mi red? Tengo métricas de centralidad calculadas (degree, betweenness,   closeness, pagerank)*
+> *como identifico que nodos son importantes en mi red? Tengo métricas de centralidad calculadas (degree, betweenness, closeness, pagerank)*
 
 **2. Respuesta de la IA:**
 
 ::: {.callout-note appearance="simple"}
-es_hub = if_else(degree > quantile(degree, 0.90), 1, 0)
+es_hub = if_else(degree >= quantile(degree, 0.90), 1, 0)
 :::
 
 **3. Crítica humana y validación:**
-
+Me hacía dudar el como detectar de una manera dinámica si era una variable binaria en función a los valores que tenía. La IA sugirió un estándar que era que si ese valor esta en el percentil 90 se podía considerar como líder en esa categoría.
 
 **4. Solución final:**
+Me pareció correcto y una manera muy ingeniosa de solucionar el problema, lo implementé.
 
 ### Interacción 8: Elección del parámetro N
 
 **1. Prompt inicial:**
 
-> *"(Le pase mi código) El enunciado me pide justificar la eleccion de N usuarios compartidos basándome en la densidad del grafo resultante. Dame una funcion que calcule los vertices, aristas y densidad según el N que yo le pase para poder evaluarlo"*
+> *"(Le pase mi código) El enunciado me pide justificar la eleccion de N usuarios compartidos basándome en la densidad del grafo resultante. Dame una funcion que calcule los vertices, aristas y densidad según el N que te pase para poder evaluarlo"*
 
 **2. Respuesta de la IA:**
 
@@ -183,11 +189,36 @@ tabla_sensibilidad <- map_df(1:5, evaluar_red_N)
 
 **3. Crítica humana y validación:**
 
-> *El cógido de la IA era correcto y pude evaluar todas las N posibles en el rango que yo quise (en este de N = 1 a N = 5)*
+El cógido de la IA era correcto y pude evaluar todas las N posibles en el rango que yo quise (en este de N = 1 a N = 5)
 
 **4. Solución final:**
 
-> *Basándome en la tabla generada, cogí **$N=4$** como el hiperparámetro óptimo. La cogí por ser la opción más equilibrada en cuanto a número de nodos - densidad. Las elecciones de N más grandes daban una red muy reducida en cuanto a nodos. Me pareció que era elección perfecta, sobre a la hora de representarlo, para que se viesen todas las aristas correctamente.
+Basándome en la tabla generada, cogí **$N=4$** como el hiperparámetro óptimo. La cogí por ser la opción más equilibrada en cuanto a número de nodos - densidad. Las elecciones de N más grandes daban una red muy reducida en cuanto a nodos. Me pareció que era elección perfecta, sobre todo, a la hora de representarlo; para que se viesen todas las aristas correctamente.
+
+### Interacción 8: Elección del parámetro N
+
+**1. Prompt inicial:**
+
+> *"(Le pase mi código y el error) Cómo hago para evitar que me siga saliendo este error?"*
+
+**2. Respuesta de la IA:**
+
+::: {.callout-note appearance="simple"}
+sd_columnas <- apply(M_utilidad, 2, sd, na.rm = TRUE)
+cols_validas <- !is.na(sd_columnas) & sd_columnas > 0
+M_utilidad_limpia <- M_utilidad[, cols_validas]
+:::
+
+**3. Crítica humana y validación:**
+
+> 
+
+**4. Solución final:**
+
+> 
+
+
+
 
 
 

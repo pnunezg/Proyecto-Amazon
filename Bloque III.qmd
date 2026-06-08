@@ -4,10 +4,179 @@
 #| warning: false
 
 set.seed(123)
+
 library(tidyverse)
-library(igraph)    
-library(tidygraph) 
-library(ggraph)  
+library(igraph)
+library(tidygraph)
+library(ggraph)
+library(ggrepel)
+library(factoextra)
 ```
 
-# Bloque III. Clasificación Basada en Enlaces (Link-based)
+
+Función para predecir la Homofilia (predice el atributo según sus vecinos)
+
+En resumen, lo que hace es coger todos los vecinos de ese nodo en concreto, saca un vector de la variable atributo en todos los vecinos que tiene. Predice con el mayor numero de repeticiones
+```{r}
+predecir_por_vecinos <- function(grafo, nodo_nombre, atributo) {
+  idx <- which(V(grafo)$name == nodo_nombre)
+  vecinos_idx <- neighbors(grafo, idx)
+  
+  if (length(vecinos_idx) == 0) return(NA)
+  
+  etiquetas <- vertex_attr(grafo, atributo, index = vecinos_idx)
+  etiquetas <- etiquetas[!is.na(etiquetas)]
+  
+  if (length(etiquetas) == 0) return(NA)
+  
+  names(which.max(table(etiquetas)))
+}
+```
+
+
+Función para recomendar productos
+```{r}
+recomendar_icf <- function(S, producto_id, top_n = 5) {
+  if (!producto_id %in% rownames(S)) {
+    return(NULL) 
+  }
+  
+  similitudes <- S[producto_id, ]
+  similitudes[producto_id] <- -Inf 
+  top <- sort(similitudes, decreasing = TRUE)[1:top_n]
+  
+  data.frame(
+    producto_recomendado = names(top),
+    similitud_pearson    = round(top, 3)
+  )
+}
+```
+
+
+Función que mide la similitud entre productos
+```{r}
+similitud_productos <- function(M) {
+  sim <- cor(M, use = "pairwise.complete.obs")
+  sim[is.na(sim)] <- 0
+  return(sim)
+}
+
+```
+
+# Bloque III
+
+## Pre - procesamiento
+
+En este bloque lo que se quiere mostrar es que si nosotros hacemos A x A (Siendo A la matriz de adyaciencia de nuestro código) obtendríamos si el producto `i` con el producto `j` están unidos por un camino de longitud 2. El problema es que al haber puesto una N tan restrictiva como N == 4 (donde dos productos están relacionados si han sido reseñados ambos por 4 usuarios o más) me he cargado todos los enlaces débiles de la red a nivel local.Puede parecer que no tiene sentido viendo la densidad global de la red pero esto ocurre por la altísima conectividad entre nodos de una misma comunidad (mediante los los `plot()` se puede comprobar).  
+
+Esto implica que tendremos que inventarnos ejemplos artificiales ocultando datos que ya conocemos. La solución que he visto es que evaluaré el modelo viendo si es capaz de redescubrir las aristas que le oculte.
+
+En resumidas cuentas, todos los usuarios de esa comunidad `C` compran varios productos a la vez por lo que no hay nada que recomendar porque ya lo hacen
+
+```{r}
+A <- as_adjacency_matrix(g_amazon, sparse = FALSE)
+common_neighbors <- A %*% A
+common_neighbors[A == 1] <- 0   
+diag(common_neighbors) <- 0
+
+posibles_predicciones <- which(common_neighbors > 0)
+
+if (length(posibles_predicciones) == 0) {
+  cat("No hay posibles enlaces nuevos que predecir")
+  
+} else {
+  cat("Se han encontrado", length(posibles_predicciones) / 2, "posibles enlaces.\n")
+}
+```
+
+
+## Homofilia
+
+Cojo un nodo predigo si clase y compruebo si es cierto
+
+Como dije, voy a tener que dividir sacar nodos de testeo, un 30% de los nodos y me quedo con sus nombres
+
+```{r}
+nodos_df <- g_amazon |> 
+  activate(nodes) |>
+  as_tibble()
+
+test_idx  <- sample(nrow(nodos_df), size = floor(0.3 * nrow(nodos_df)))
+test_nodos <- nodos_df$name[test_idx]
+```
+
+
+Una vez saco los nodos para testear hago la predicción y compruebo los valores (el atributo por el que comparo es comunidad)
+
+
+Da ese accuracy porque como he dicho, son muchos clústeres de productos muy concetrados en los que solo están relacionados con productos de su comunidad de louvain por lo que siempre dará bien
+```{r}
+real_comunidad     <- as.character(nodos_df$comunidad[test_idx])
+predicha_comunidad <- sapply(test_nodos, predecir_por_vecinos,
+                             grafo = g_amazon, atributo = "comunidad")
+
+accuracy_comunidad <- mean(real_comunidad == predicha_comunidad, na.rm = TRUE)
+
+# Accuracy conseguido con la predicción
+round(accuracy_comunidad * 100, 1)
+```
+
+## Link based
+
+### Preparación de los datos y Matriz de Utilidad
+
+```{r}
+productos_del_grafo <- V(g_amazon)$name 
+
+dt_util <- datos_filtrados |>
+  filter(ProductId %in% productos_del_grafo) |>
+  select(UserId, ProductId, Score)
+
+usuarios_activos <- dt_util |> 
+  count(UserId) |> 
+  filter(n >= 4) |> 
+  pull(UserId)
+
+```
+
+### Matriz M de usuarios sin problemas
+```{r}
+
+M_ancha <- dt_util |>
+  filter(UserId %in% usuarios_activos) |>
+  pivot_wider(names_from = ProductId, values_from = Score, values_fn = mean)
+
+M_utilidad <- as.matrix(M_ancha[, -1])   
+rownames(M_utilidad) <- M_ancha$UserId   
+
+# 2. Limpieza de varianza (Columnas = Productos) para evitar el warning
+sd_columnas <- apply(M_utilidad, 2, sd, na.rm = TRUE)
+cols_validas <- !is.na(sd_columnas) & sd_columnas > 0
+M_utilidad_limpia <- M_utilidad[, cols_validas]
+```
+
+
+```{r}
+# 3. Cálculo de Similitud de Pearson entre Productos
+S_items <- similitud_productos(M_utilidad_limpia)
+
+M_bin <- ifelse(is.na(M_utilidad_limpia), 0, 1)
+usuarios_comunes <- crossprod(M_bin)
+S_items_filtrada <- ifelse(usuarios_comunes < 2, 0, S_items)
+
+# Selecciono un nodo cualquiera y predigo un link
+producto_ejemplo <- colnames(M_utilidad_limpia)[1] 
+recomendaciones_finales <- recomendar_icf(S_items_filtrada, producto_ejemplo)
+
+cat("Nodo de origen (Producto comprado):", producto_ejemplo, "\n")
+cat("Predice la creación de enlaces con los siguientes nodos:\n\n")
+print(recomendaciones_finales)
+```
+
+
+
+
+
+
+
+
