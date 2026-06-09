@@ -113,6 +113,7 @@ Está técnica consiste en inferir un valor basándonos en el de sus vecinos. En
 
 - Una vez hecho esto, calculo el accuracy de mi predicción
 
+En este algoritmo no se saca ningún conjunto de entrenamiento/test porque no hay nada que entrenar. Simplemente se prueba la validez del método con los datos que tenemos. Es predictor pero no entrenable ya que depende únicamente de cuántos y qué datos tengo en mi red.
 ```{r}
 #| label: homofilia
 
@@ -206,6 +207,8 @@ Una vez tengo la matriz de la similitud de todos los votos hago lo siguiente:
 - Cojo un 20% de las aristas del grafo para testear que las predicciones sean correctas
 
 - A estas aristas les aplico la función que me da la correlación entre el nodo `i` y `j` de mi conjunto de testeo. Si existe correlación, la devuelve. Si no existe correlación, devuelve NA.
+
+Como dije más arriba, no hay triángulos abiertos en mi grafo por lo que no hay nada que predecir. La estrategia se reduce a ser puramente de testeo. No me sirve entrenar el modelo de nada ya que voy a tener un resultado igual, en el mejor de los casos, a los propios enlaces que ya existen en mi red.
 ```{r}
 #| label: evaluacion-link-prediction
 

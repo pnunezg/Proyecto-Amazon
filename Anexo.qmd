@@ -7,8 +7,7 @@ De acuerdo con los requisitos del proyecto, esta sección documenta el uso de he
 A continuación, se detallan las interacciones más relevantes ordenadas por los bloques del proyecto.
 
 
-## Interacciones con la IA
-
+***
 ## Interacción 1: Creación de la estructura del Anexo
 
 **1. Prompt inicial:**
@@ -41,6 +40,7 @@ Me pareció correcto el anexo ya que daba una breve introducción bastante expli
 
 Modifiqué un par de cosas y lo usé muy similar al que pasó la IA.
 
+***
 
 ## Interacción 2: Visualización del Criterio de Káiser
 
@@ -69,9 +69,9 @@ Sabía que era correcto ya que se podía aplicar por capas como ggplot(), ggraph
 
 Lo implementé en mi codigo ya que solo era añadir una línea.
 
+***
 
 ## Interacción 3: Semilla a usar
-
 **1. Prompt inicial:**
 
 > *(Adjunté el pdf de la práctica) "¿Qué semilla es la mejor para que todos los bloques de este proyecto?"*
@@ -95,6 +95,7 @@ Pese a que el profesor usa la semilla 42, ambas sirven de lo mismo (aseguran que
 
 La implementé en mi código en todas las cargas de librerías.
 
+***
 
 ## Interacción 4: Filtrado de datos
 
@@ -121,6 +122,7 @@ Las fechas eran correctas y representaban lo que yo quería.
 
 Lo implementé como filtrado en mi código.
 
+***
 
 ## Interacción 5: Compartir objetos entre bloques de Quarto
 
@@ -150,6 +152,7 @@ No sé si sería la mejor pero era una manera eficiente de guardar los archivos 
 
 Lo implementé en todas las secciones de cargas de librerías.
 
+***
 
 ## Interacción 6: Correlaciones
 
@@ -173,6 +176,7 @@ Me decía de hacer el producto matricial de las componentes en el espacio nuevo 
 
 Lo implementé en mi código junto al `corrplot()` para poder representarlas.
 
+***
 
 ## Interacción 7: Identificar nodos importantes
 
@@ -196,6 +200,7 @@ Me hacía dudar el cómo detectar de una manera dinámica si era una variable bi
 
 Me pareció correcto y una manera muy ingeniosa de solucionar el problema, lo implementé.
 
+***
 
 ## Interacción 8: Elección del parámetro N
 
@@ -231,7 +236,7 @@ El código de la IA era correcto y pude evaluar todas las N posibles en el rango
 
 Basándome en la tabla generada, cogí **$N=4$** como el hiperparámetro óptimo. La cogí por ser la opción más equilibrada en cuanto a número de nodos - densidad. Las elecciones de N más grandes daban una red muy reducida en cuanto a nodos. Me pareció que era elección perfecta, sobre todo, a la hora de representarlo; para que se viesen todas las aristas correctamente.
 
-
+***
 
 ## Interacción 9: Planteamiento del problema de vecinos comunes
 
@@ -260,6 +265,7 @@ Era la manera correcta de calcular triángulos abiertos en mi red
 
 Lo implementé pero no había triángulos abiertos en mi red así que se quedó de forma ilustrativa. Recurrí simplemente a ocultar ciertos nodos y predecirlos.
 
+***
 
 ## Interacción 10: Función de predicción por homofilia
 
@@ -305,6 +311,7 @@ La función me pareció correcta porque hacía lo que se le pedía: sacaba los v
 Utilicé la función propuesta para realizar experimentos de homofilia sobre distintos atributos del grafo. Gracias a que la función era genérica, pude reutilizarla sin modificaciones importantes para evaluar diferentes características de los nodos.
 
 
+***
 
 ## Interacción 11: Construcción de la matriz de utilidad
 
@@ -329,17 +336,17 @@ similitudes_test <- sapply(1:nrow(test_edges), function(i) {
   }
 })
 ```
-Usa `values_fn = mean` por si un usuario reseñó el mismo producto varias veces.
 :::
 
 **3. Crítica humana y validación:**
 
-La recomendación era razonable porque evitaba errores derivados de reseñas duplicadas realizadas por un mismo usuario. Además, el cálculo de similitud entre productos era coherente con la estrategia de filtrado colaborativo basada en ítems que estaba utilizando en el proyecto.
+Como dije, iba a ser una función descriptora y no predictora por lo que solo quería comprobar enlaces que ya existiesen.
 
 **4. Solución final:**
 
-Implementé la construcción de la matriz de utilidad utilizando la agregación mediante la media cuando existían varias reseñas para un mismo par usuario-producto. Esto permitió obtener una matriz consistente sobre la que calcular posteriormente las similitudes entre productos.
+Lo implementé en mi código.
 
+***
 
 ## Interacción 12: Eliminación de productos sin variabilidad
 
@@ -436,3 +443,9 @@ cat("Análisis de las Recomendaciones:\n")
 print(analisis_recomendaciones)
 ``` 
 :::
+
+**3. Crítica humana y validación:**
+Era correcto y justamente lo que quería ilustrar.
+
+**4. Solución final:**
+Lo implementé ligeramente en mi código.
