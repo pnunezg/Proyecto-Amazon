@@ -1,15 +1,18 @@
 # Anexo acerca del uso de la IA 
 
+## Introducción 
+
 De acuerdo con los requisitos del proyecto, esta sección documenta el uso de herramientas de Inteligencia Artificial como asistencia en la programación y análisis. El objetivo no es mostrar un registro exhaustivo de cada línea de código, sino evidenciar el **proceso iterativo, la validación crítica y la corrección de errores** o ineficiencias propuestas por la IA.
 
 A continuación, se detallan las interacciones más relevantes ordenadas por los bloques del proyecto.
 
 
-## Fase de Preparación
+## Interacciones con la IA
 
-### Interacción 1: Creación de la estructura del Anexo
+## Interacción 1: Creación de la estructura del Anexo
 
 **1. Prompt inicial:**
+
 > *"dame un archivo de anexo que me sirva para ir rellenando las consultas realizadas a la IA tal y como pone en el PDF"*
 
 **2. Respuesta de la IA:**
@@ -28,7 +31,6 @@ Interacción X: [Título descriptivo, ej. Optimización del layout del grafo]
 2. Respuesta de la IA:
 3. Crítica humana y validación:
 4. Solución final:
-
 :::
 
 **3. Crítica humana y validación:**
@@ -39,21 +41,24 @@ Me pareció correcto el anexo ya que daba una breve introducción bastante expli
 
 Modifiqué un par de cosas y lo usé muy similar al que pasó la IA.
 
-### Interacción 2: Visualización del Criterio de Káiser
 
-**1. Prompt inicial:**´
+## Interacción 2: Visualización del Criterio de Káiser
+
+**1. Prompt inicial:**
 
 > *"fviz_eig(acp, choice = eigenvalue, addlabels = TRUE, ylim = c(0, 2), title = Scree Plot - Criterio de Kaiser) como le añado una linea que pase por y = 1"*
 
 **2. Respuesta de la IA:**
 
 ::: {.callout-note appearance="simple"}
+```r
 fviz_eig(acp,
          choice = "eigenvalue",
          addlabels = TRUE,
          ylim = c(0, 2),
          title = "Scree Plot - Criterio de Kaiser") +
   geom_hline(yintercept = 1, linetype = "dashed", color = "red", linewidth = 1)
+```
 :::
 
 **3. Crítica humana y validación:**
@@ -62,13 +67,14 @@ Sabía que era correcto ya que se podía aplicar por capas como ggplot(), ggraph
 
 **4. Solución final:**
 
-Lo implementé en mi codigo ya que solo era añadir una línea
+Lo implementé en mi codigo ya que solo era añadir una línea.
 
-### Interacción 3: Semilla a usar
+
+## Interacción 3: Semilla a usar
 
 **1. Prompt inicial:**
 
-> *(Adjunté el pdf de la prácitca) "¿Qué semilla es la mejor para que todos los bloques de este proyecto?"*
+> *(Adjunté el pdf de la práctica) "¿Qué semilla es la mejor para que todos los bloques de este proyecto?"*
 
 **2. Respuesta de la IA:**
 
@@ -77,148 +83,356 @@ Leyendo la rúbrica, lo más importante es que el set.seed sea consistente en to
 
 Te recomendaría poner set.seed(123) por estas razones:
 
-Es el más estándar y reconocible académicamente
-Lo verá el profesor y sabrá inmediatamente que es una semilla de control, no un número aleatorio
+Es el más estándar y reconocible académicamente.
+Lo verá el profesor y sabrá inmediatamente que es una semilla de control, no un número aleatorio.
 :::
 
 **3. Crítica humana y validación:**
-Pese a que el profesor usa la semilla 42, ambas sirven de lo mismo (aseguran que los números sean pseudoaletorios mediante esta) así que, como sirven para lo mismo, me quede con la respuesta de la IA.
+
+Pese a que el profesor usa la semilla 42, ambas sirven de lo mismo (aseguran que los números sean pseudoaleatorios mediante esta) así que, como sirven para lo mismo, me quedé con la respuesta de la IA.
 
 **4. Solución final:**
+
 La implementé en mi código en todas las cargas de librerías.
 
-### Interacción 4: Filtrado de datos
+
+## Interacción 4: Filtrado de datos
+
 **1. Prompt inicial:**
 
-> *El proyecto me pide que no procese todo el dataset de golpe para evitar problemas de memoria, sino que filtre por un rango temporal. Uso data.table. Cómo filtro los datos para quedarme solo con las reseñas publicadas durante el Mundial de Fútbol de Sudáfrica 2010?*
+> *"El proyecto me pide que no procese todo el dataset de golpe para evitar problemas de memoria, sino que filtre por un rango temporal. Uso data.table. Cómo filtro los datos para quedarme solo con las reseñas publicadas durante el Mundial de Fútbol de Sudáfrica 2010?"*
 
 **2. Respuesta de la IA:**
 
 ::: {.callout-note appearance="simple"}
+```r
 fecha_inicio <- as.numeric(as.POSIXct("2010-06-11", tz="UTC"))
-fecha_fin <- as.numeric(as.POSIXct("2010-07-11", tz="UTC"))
+fecha_fin    <- as.numeric(as.POSIXct("2010-07-11", tz="UTC"))
 
 datos_filtrados <- datos_amazon[Time >= fecha_inicio & Time <= fecha_fin]
+```
 :::
 
 **3. Crítica humana y validación:**
+
 Las fechas eran correctas y representaban lo que yo quería.
 
 **4. Solución final:**
-Lo implementé como filrado en mi código.
 
-### Interacción 5: Compartir objetos entre bloques de Quarto
+Lo implementé como filtrado en mi código.
+
+
+## Interacción 5: Compartir objetos entre bloques de Quarto
 
 **1. Prompt inicial:**
-> *Tengo un proyecto Quarto con varios .qmd separados. El Bloque II necesita `tabla_metricas` y `datos_filtrados` que se crearon en el Bloque I, pero al renderizar me da problemas*
+
+> *"Tengo un proyecto Quarto con varios .qmd separados. El Bloque II necesita `tabla_metricas` y `datos_filtrados` que se crearon en el Bloque I, pero al renderizar me da problemas."*
 
 **2. Respuesta de la IA:**
 
 ::: {.callout-note appearance="simple"}
-Al final de Bloque I.qmd:
+```r
+# Al final de Bloque I.qmd:
 saveRDS(tabla_metricas, "datos/tabla_metricas.rds")
 saveRDS(datos_filtrados, "datos/datos_filtrados.rds")
 
-Al inicio del setup de Bloque II.qmd:
+# Al inicio del setup de Bloque II.qmd:
 tabla_metricas  <- readRDS("datos/tabla_metricas.rds")
 datos_filtrados <- readRDS("datos/datos_filtrados.rds")
+```
 :::
 
 **3. Crítica humana y validación:**
-No se si sería la mejor pero era una manera eficiente de guardar los archivos necesarios. Me servía además para el git.
+
+No sé si sería la mejor pero era una manera eficiente de guardar los archivos necesarios. Me servía además para el git.
 
 **4. Solución final:**
+
 Lo implementé en todas las secciones de cargas de librerías.
 
-### Interacción 6: Correlaciones
+
+## Interacción 6: Correlaciones
+
 **1. Prompt inicial:**
 
-> *como puedo hacer para ver hallar los vectores de mis datos en 2 dimensiones en PCA en mi base original?*
+> *"¿Cómo puedo hallar los vectores de mis datos en 2 dimensiones en PCA en mi base original?"*
 
 **2. Respuesta de la IA:**
 
 ::: {.callout-note appearance="simple"}
+```r
 datos_sombra_2d <- acp$x[, 1:2] %*% t(acp$rotation[, 1:2])
+```
 :::
 
 **3. Crítica humana y validación:**
+
 Me decía de hacer el producto matricial de las componentes en el espacio nuevo por la traspuesta de la matriz de cambio de base para poder hallar las nuevas coordenadas. Era correcto porque así se cambia de bases en álgebra lineal.
 
 **4. Solución final:**
-Lo implementé en mi código junto al `corrplot()` para poder representarlas
 
-### Interacción 7: Identificar nodos importantes
+Lo implementé en mi código junto al `corrplot()` para poder representarlas.
+
+
+## Interacción 7: Identificar nodos importantes
 
 **1. Prompt inicial:**
-> *como identifico que nodos son importantes en mi red? Tengo métricas de centralidad calculadas (degree, betweenness, closeness, pagerank)*
+
+> *"¿Cómo identifico qué nodos son importantes en mi red? Tengo métricas de centralidad calculadas (degree, betweenness, closeness, pagerank)."*
 
 **2. Respuesta de la IA:**
 
 ::: {.callout-note appearance="simple"}
+```r
 es_hub = if_else(degree >= quantile(degree, 0.90), 1, 0)
+```
 :::
 
 **3. Crítica humana y validación:**
-Me hacía dudar el como detectar de una manera dinámica si era una variable binaria en función a los valores que tenía. La IA sugirió un estándar que era que si ese valor esta en el percentil 90 se podía considerar como líder en esa categoría.
+
+Me hacía dudar el cómo detectar de una manera dinámica si era una variable binaria en función a los valores que tenía. La IA sugirió un estándar que era que si ese valor estaba en el percentil 90 se podía considerar como líder en esa categoría.
 
 **4. Solución final:**
+
 Me pareció correcto y una manera muy ingeniosa de solucionar el problema, lo implementé.
 
-### Interacción 8: Elección del parámetro N
+
+## Interacción 8: Elección del parámetro N
 
 **1. Prompt inicial:**
 
-> *"(Le pase mi código) El enunciado me pide justificar la eleccion de N usuarios compartidos basándome en la densidad del grafo resultante. Dame una funcion que calcule los vertices, aristas y densidad según el N que te pase para poder evaluarlo"*
+> *"(Le pasé mi código) El enunciado me pide justificar la elección de N usuarios compartidos basándome en la densidad del grafo resultante. Dame una función que calcule los vértices, aristas y densidad según el N que te pase para poder evaluarlo."*
 
 **2. Respuesta de la IA:**
 
 ::: {.callout-note appearance="simple"}
+```r
 evaluar_red_N <- function(umbral_N) {
   aristas_temp <- todas_las_aristas |> filter(usuarios_compartidos >= umbral_N)
-  nodos_temp <- tabla_metricas |> filter(ProductId %in% unique(c(aristas_temp$from, aristas_temp$to)))
-  g_temp <- graph_from_data_frame(d = aristas_temp, vertices = nodos_temp, directed = FALSE)
-  
+  nodos_temp   <- tabla_metricas |>
+    filter(ProductId %in% unique(c(aristas_temp$from, aristas_temp$to)))
+  g_temp <- graph_from_data_frame(d = aristas_temp, vertices = nodos_temp,
+                                  directed = FALSE)
   return(data.frame(
-    Umbral_N = umbral_N, Nodos = vcount(g_temp),
-    Aristas = ecount(g_temp), Densidad = round(edge_density(g_temp), 5)
+    Umbral_N = umbral_N, Nodos    = vcount(g_temp),
+    Aristas  = ecount(g_temp),    Densidad = round(edge_density(g_temp), 5)
   ))
 }
 
 tabla_sensibilidad <- map_df(1:5, evaluar_red_N)
+```
 :::
 
 **3. Crítica humana y validación:**
 
-El cógido de la IA era correcto y pude evaluar todas las N posibles en el rango que yo quise (en este de N = 1 a N = 5)
+El código de la IA era correcto y pude evaluar todas las N posibles en el rango que yo quise (en este caso de N = 1 a N = 5).
 
 **4. Solución final:**
 
 Basándome en la tabla generada, cogí **$N=4$** como el hiperparámetro óptimo. La cogí por ser la opción más equilibrada en cuanto a número de nodos - densidad. Las elecciones de N más grandes daban una red muy reducida en cuanto a nodos. Me pareció que era elección perfecta, sobre todo, a la hora de representarlo; para que se viesen todas las aristas correctamente.
 
-### Interacción 8: Elección del parámetro N
+
+
+## Interacción 9: Planteamiento del problema de vecinos comunes
 
 **1. Prompt inicial:**
 
-> *"(Le pase mi código y el error) Cómo hago para evitar que me siga saliendo este error?"*
+> *"Tengo una red de productos de Amazon con N >= 4. Quiero hacer link prediction buscando vecinos comunes. como calculo eso con la matriz de adyacencia?"*
 
 **2. Respuesta de la IA:**
 
 ::: {.callout-note appearance="simple"}
-sd_columnas <- apply(M_utilidad, 2, sd, na.rm = TRUE)
-cols_validas <- !is.na(sd_columnas) & sd_columnas > 0
-M_utilidad_limpia <- M_utilidad[, cols_validas]
+El producto A×A (donde A es la matriz de adyacencia) te da exactamente eso: la entrada [i,j] indica cuántos vecinos comunes tienen los nodos i y j.
+
+```r
+A <- as_adjacency_matrix(g, sparse = FALSE)
+common_neighbors <- A %*% A
+common_neighbors[A == 1] <- 0  # quitar pares ya enlazados
+diag(common_neighbors) <- 0    # quitar auto-bucles
+```
 :::
 
 **3. Crítica humana y validación:**
 
-> 
+Era la manera correcta de calcular triángulos abiertos en mi red
 
 **4. Solución final:**
 
-> 
+Lo implementé pero no había triángulos abiertos en mi red así que se quedó de forma ilustrativa. Recurrí simplemente a ocultar ciertos nodos y predecirlos.
+
+
+## Interacción 10: Función de predicción por homofilia
+
+**1. Prompt inicial:**
+
+> *"Quiero predecir el atributo de comunidad de un nodo basándome en sus n vecinos. Dame una función genérica que funcione para cualquier atributo del grafo."*
+
+**2. Respuesta de la IA:**
+
+::: {.callout-note appearance="simple"}
+```r
+predecir_por_vecinos <- function(grafo, nodo_nombre, atributo, n_vecinos) {
+  # 1. Encontrar el índice del nodo
+  idx <- which(V(grafo)$name == nodo_nombre)
+  if (length(idx) == 0) return(NA)
+  
+  # 2. Obtener todos los vecinos
+  vecinos_idx <- neighbors(grafo, idx)
+  if (length(vecinos_idx) == 0) return(NA)
+  
+  # 3. Si tiene más vecinos de los requeridos, nos quedamos solo con 'n_vecinos' al azar
+  if (length(vecinos_idx) > n_vecinos) {
+    vecinos_idx <- sample(vecinos_idx, size = n_vecinos)
+  }
+  
+  # 4. Extraer el atributo solo de esos vecinos seleccionados
+  etiquetas <- vertex_attr(grafo, atributo, index = vecinos_idx)
+  etiquetas <- etiquetas[!is.na(etiquetas)]
+  if (length(etiquetas) == 0) return(NA)
+  
+  # 5. Predecir con el valor mayoritario (moda)
+  names(which.max(table(etiquetas)))
+}
+```
+:::
+
+**3. Crítica humana y validación:**
+
+La función me pareció correcta porque hacía lo que se le pedía: sacaba los vecinos de ese nodo i asociado al nombre, sacaba el atributo "atributo" de cada uno de los nodos vecinos y veía cuál era el valor más repetido.
+
+**4. Solución final:**
+
+Utilicé la función propuesta para realizar experimentos de homofilia sobre distintos atributos del grafo. Gracias a que la función era genérica, pude reutilizarla sin modificaciones importantes para evaluar diferentes características de los nodos.
 
 
 
+## Interacción 11: Construcción de la matriz de utilidad
+
+**1. Prompt inicial:**
+
+> *"Estoy construyendo una matriz usuario-producto para un sistema de recomendación basado en filtrado colaborativo. como puedo calcular la similitud entre pares de productos para evaluar posteriormente recomendaciones?"*
+
+**2. Respuesta de la IA:**
+
+::: {.callout-note appearance="simple"}
+```r
+# Para cada arista oculta, calcular su similitud
+similitudes_test <- sapply(1:nrow(test_edges), function(i) {
+  prod1 <- test_edges[i, 1]
+  prod2 <- test_edges[i, 2]
+  
+  if (prod1 %in% rownames(S_items_filtrada) && 
+      prod2 %in% rownames(S_items_filtrada)) {
+    return(S_items_filtrada[prod1, prod2])
+  } else {
+    return(NA)
+  }
+})
+```
+Usa `values_fn = mean` por si un usuario reseñó el mismo producto varias veces.
+:::
+
+**3. Crítica humana y validación:**
+
+La recomendación era razonable porque evitaba errores derivados de reseñas duplicadas realizadas por un mismo usuario. Además, el cálculo de similitud entre productos era coherente con la estrategia de filtrado colaborativo basada en ítems que estaba utilizando en el proyecto.
+
+**4. Solución final:**
+
+Implementé la construcción de la matriz de utilidad utilizando la agregación mediante la media cuando existían varias reseñas para un mismo par usuario-producto. Esto permitió obtener una matriz consistente sobre la que calcular posteriormente las similitudes entre productos.
 
 
+## Interacción 12: Eliminación de productos sin variabilidad
 
+**1. Prompt inicial:**
+
+> *"Al calcular la matriz de similitud entre productos me aparecen errores y valores NA. ¿Puede deberse a que algunos productos tienen varianza cero?"*
+
+**2. Respuesta de la IA:**
+
+::: {.callout-note appearance="simple"}
+Me dijo que sí y me dio este código para solucionarlo
+
+```r
+sd_columnas <- apply(M_utilidad, 2, sd, na.rm = TRUE)
+cols_validas <- !is.na(sd_columnas) & sd_columnas > 0
+M_utilidad <- M_utilidad[, cols_validas]
+```
+
+**3. Crítica humana y validación:**
+Era correcto, me eliminaba el error
+
+**4. Solución final:**
+Lo implementé en mi código
+
+
+## Interacción 13: Evaluación experimental del Link Prediction
+
+**1. Prompt inicial:**
+
+> *"Necesito una forma de evaluar mi algoritmo de link prediction utilizando la matriz de similitud entre productos. como puedo hacerlo?"*
+
+**2. Respuesta de la IA:**
+
+::: {.callout-note appearance="simple"}
+```r
+#| label: evaluacion-link-prediction
+
+aristas_originales <- as_edgelist(g_amazon)
+n_aristas <- nrow(aristas_originales)
+
+test_edges_idx <- sample(n_aristas,
+                         size = floor(0.2 * n_aristas))
+
+test_edges <- aristas_originales[test_edges_idx, ]
+
+similitudes_test <- sapply(1:nrow(test_edges), function(i) {
+  prod1 <- test_edges[i, 1]
+  prod2 <- test_edges[i, 2]
+
+  if (prod1 %in% rownames(S_items) &&
+      prod2 %in% rownames(S_items)) {
+    return(S_items[prod1, prod2])
+  } else {
+    return(NA)
+  }
+})
+
+similitudes_test <- similitudes_test[!is.na(similitudes_test)]
+
+cat("Aristas ocultas para test:", length(similitudes_test), "\n")
+cat("Similitud media:", round(mean(similitudes_test), 4), "\n")
+cat("Similitud mediana:", round(median(similitudes_test), 4), "\n")
+cat("Mínimo:", round(min(similitudes_test), 4), "\n")
+cat("Máximo:", round(max(similitudes_test), 4), "\n")
+```
+:::
+
+**3. Crítica humana y validación:**
+Parecía correcta, la implementé y así fue. Sin embargo, borre algunos campos
+
+**4. Solución final:**
+Lo implementé ligeramente modificado en mi código
+
+## Interacción 14: Interpretación de las recomendaciones generadas
+
+**1. Prompt inicial:**
+
+> *"Ya tengo una lista de productos recomendados. ¿Cómo puedo comprobar si realmente son parecidos al producto original?"*
+
+**2. Respuesta de la IA:**
+
+::: {.callout-note appearance="simple"}
+```r
+#| label: analisis-recomendaciones
+
+productos_a_revisar <- c(producto_ejemplo, recomendaciones$producto_recomendado)
+
+analisis_recomendaciones <- nodos_df |>
+  filter(name %in% productos_a_revisar) |>
+  select(name, comunidad, calidad, rating_promedio) |>
+  arrange(match(name, productos_a_revisar))
+
+cat("Análisis de las Recomendaciones:\n")
+print(analisis_recomendaciones)
+``` 
+:::
