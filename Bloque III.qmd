@@ -8,9 +8,6 @@ set.seed(123)
 library(tidyverse)
 library(igraph)
 library(tidygraph)
-library(ggraph)
-library(ggrepel)
-library(factoextra)
 
 g_amazon <- readRDS("datos/g_amazon.rds")
 datos_filtrados <- readRDS("datos/datos_filtrados.rds")
@@ -20,7 +17,7 @@ datos_filtrados <- readRDS("datos/datos_filtrados.rds")
 
 ## Función Predictora de la Homofilia 
 
-Lo que hace es coger todos los n vecinos de ese nodo en concreto y saca un vector del atributo "atributo" de todos los vértices de los vecinos que tiene. Predice con el valor más repetido en ese vector.
+Esta función Lo que hace es coger todos los n vecinos de ese nodo en concreto y saca un vector del atributo "atributo" de todos los vértices de los vecinos que tiene. Predice con el valor más repetido en ese vector.
 
 ```{r}
 #| label: funcion-homofilia-n-vecinos
@@ -46,7 +43,7 @@ predecir_por_vecinos <- function(grafo, nodo_nombre, atributo, n_vecinos = 3) {
 
 ## Función Recomendadora de links
 
-Lo que hace esta función es ver los 5 productos con más similitud a un producto cualquiera.
+Esta función me predide los n productos con mayor similitud al que se le pasa por parámetro. Como la red es una red con alta conectividad local entre comunidades, **siempre** predice los propios nodos de la comunidad.
 ```{r}
 #| label: funciones-link-based
 
@@ -139,7 +136,7 @@ accuracy_calidad <- mean(real_calidad == predicha_calidad, na.rm = TRUE)
 
 cat("Accuracy de homofilia (Calidad):", round(accuracy_calidad * 100, 1), "%\n")
 ```
-El accuracy es muy alto porque el filtrado que se aplicó en el Bloque II es muy restrictivo (N >= 4) y me hizo comunidades donde, casi siempre, todos los productos tienen la misma etiqueta.
+El accuracy es muy alto porque el filtrado que se aplicó en el Bloque II es muy restrictivo (N >= 4) y me hizo comunidades donde, casi siempre, todos los productos tienen la misma etiqueta. Es decir, un usuario compra varios productos de su comunidad y los valora todos con la misma nota general.
 
 ## Clasificación Basada en Enlaces
 
@@ -198,45 +195,6 @@ cat("Pares de productos con similitud > 0:", sim_positiva, "de", total_pares, "\
 cat("Porcentaje:", round(100 * sim_positiva / total_pares, 2), "%\n")
 ```
 Viendo el porcentaje de productos con similitud refuerza, de nuevo, la idea de los clusters aislados que se forman de comunidades de productos. Sin embargo, no es conexa a nivel global.
-
-
-### Evaluación del modelo
-
-Una vez tengo la matriz de la similitud de todos los votos hago lo siguiente:
-
-- Cojo un 20% de las aristas del grafo para testear que las predicciones sean correctas
-
-- A estas aristas les aplico la función que me da la correlación entre el nodo `i` y `j` de mi conjunto de testeo. Si existe correlación, la devuelve. Si no existe correlación, devuelve NA.
-
-Como dije más arriba, no hay triángulos abiertos en mi grafo por lo que no hay nada que predecir. La estrategia se reduce a ser puramente de testeo. No me sirve entrenar el modelo de nada ya que voy a tener un resultado igual, en el mejor de los casos, a los propios enlaces que ya existen en mi red.
-```{r}
-#| label: evaluacion-link-prediction
-
-aristas_originales <- as_edgelist(g_amazon)
-n_aristas <- nrow(aristas_originales)
-test_edges_idx <- sample(n_aristas, size = floor(0.2 * n_aristas))
-test_edges <- aristas_originales[test_edges_idx, ]
-
-# Explicada arriba
-similitudes_test <- sapply(1:nrow(test_edges), function(i) {
-  prod1 <- test_edges[i, 1]
-  prod2 <- test_edges[i, 2]
-  
-  if (prod1 %in% rownames(S_items) && 
-      prod2 %in% rownames(S_items)) {
-    return(S_items[prod1, prod2])
-  } else {
-    return(NA)
-  }
-})
-
-# Me quedo solo con las aristas que sí que tenian relación
-similitudes_test <- similitudes_test[!is.na(similitudes_test)]
-
-cat("Aristas ocultas para test:", length(similitudes_test), "\n")
-cat("Similitud media:", round(mean(similitudes_test), 4), "\n")
-```
-Viendo los resolutados puedo decir que los usuarios que compran un grupo de productos concretos los valoran exactamente igual. Si a un usuario le gusta lo que compro de su comunidad, le pone 5 estrellas a todo. Si no le gusta, le pone 1 a todo. Además, normalmente compran toda la comunidad, como se vio en las interacciones del grafo.
 
 
 ### Ejemplo de recomendación

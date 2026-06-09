@@ -1,6 +1,5 @@
 # Anexo acerca del uso de la IA 
 
-## Introducción 
 
 De acuerdo con los requisitos del proyecto, esta sección documenta el uso de herramientas de Inteligencia Artificial como asistencia en la programación y análisis. El objetivo no es mostrar un registro exhaustivo de cada línea de código, sino evidenciar el **proceso iterativo, la validación crítica y la corrección de errores** o ineficiencias propuestas por la IA.
 
@@ -242,7 +241,7 @@ Basándome en la tabla generada, cogí **$N=4$** como el hiperparámetro óptimo
 
 **1. Prompt inicial:**
 
-> *"Tengo una red de productos de Amazon con N >= 4. Quiero hacer link prediction buscando vecinos comunes. como calculo eso con la matriz de adyacencia?"*
+> *"Tengo una red de productos de Amazon con N >= 4. Quiero hacer link prediction buscando vecinos comunes. como calculo eso?"*
 
 **2. Respuesta de la IA:**
 
@@ -263,7 +262,7 @@ Era la manera correcta de calcular triángulos abiertos en mi red
 
 **4. Solución final:**
 
-Lo implementé pero no había triángulos abiertos en mi red así que se quedó de forma ilustrativa. Recurrí simplemente a ocultar ciertos nodos y predecirlos.
+Lo implementé pero no había triángulos abiertos en mi red así que se quedó de forma ilustrativa.
 
 ***
 
@@ -271,7 +270,7 @@ Lo implementé pero no había triángulos abiertos en mi red así que se quedó 
 
 **1. Prompt inicial:**
 
-> *"Quiero predecir el atributo de comunidad de un nodo basándome en sus n vecinos. Dame una función genérica que funcione para cualquier atributo del grafo."*
+> *"Quiero predecir uun atributo de un nodo basándome en sus n vecinos. Dame una función genérica que funcione para cualquier atributo del grafo."*
 
 **2. Respuesta de la IA:**
 
@@ -313,42 +312,7 @@ Utilicé la función propuesta para realizar experimentos de homofilia sobre dis
 
 ***
 
-## Interacción 11: Construcción de la matriz de utilidad
-
-**1. Prompt inicial:**
-
-> *"Estoy construyendo una matriz usuario-producto para un sistema de recomendación basado en filtrado colaborativo. como puedo calcular la similitud entre pares de productos para evaluar posteriormente recomendaciones?"*
-
-**2. Respuesta de la IA:**
-
-::: {.callout-note appearance="simple"}
-```r
-# Para cada arista oculta, calcular su similitud
-similitudes_test <- sapply(1:nrow(test_edges), function(i) {
-  prod1 <- test_edges[i, 1]
-  prod2 <- test_edges[i, 2]
-  
-  if (prod1 %in% rownames(S_items_filtrada) && 
-      prod2 %in% rownames(S_items_filtrada)) {
-    return(S_items_filtrada[prod1, prod2])
-  } else {
-    return(NA)
-  }
-})
-```
-:::
-
-**3. Crítica humana y validación:**
-
-Como dije, iba a ser una función descriptora y no predictora por lo que solo quería comprobar enlaces que ya existiesen.
-
-**4. Solución final:**
-
-Lo implementé en mi código.
-
-***
-
-## Interacción 12: Eliminación de productos sin variabilidad
+## Interacción 11: Eliminación de productos sin variabilidad
 
 **1. Prompt inicial:**
 
@@ -356,14 +320,16 @@ Lo implementé en mi código.
 
 **2. Respuesta de la IA:**
 
-::: {.callout-note appearance="simple"}
 Me dijo que sí y me dio este código para solucionarlo
 
+
+::: {.callout-note appearance="simple"}
 ```r
 sd_columnas <- apply(M_utilidad, 2, sd, na.rm = TRUE)
 cols_validas <- !is.na(sd_columnas) & sd_columnas > 0
 M_utilidad <- M_utilidad[, cols_validas]
 ```
+:::
 
 **3. Crítica humana y validación:**
 Era correcto, me eliminaba el error
@@ -372,80 +338,61 @@ Era correcto, me eliminaba el error
 Lo implementé en mi código
 
 
-## Interacción 13: Evaluación experimental del Link Prediction
-
+## Interacción 12: Evaluación experimental del Link Prediction
 **1. Prompt inicial:**
 
-> *"Necesito una forma de evaluar mi algoritmo de link prediction utilizando la matriz de similitud entre productos. como puedo hacerlo?"*
+> *"Quiero recomendar un producto (link based) en base a las similitudes que haya con este.*
+
 
 **2. Respuesta de la IA:**
 
-::: {.callout-note appearance="simple"}
+:::{.callout-note appearance="simple"}
 ```r
-#| label: evaluacion-link-prediction
+#| label: funciones-link-based
 
-aristas_originales <- as_edgelist(g_amazon)
-n_aristas <- nrow(aristas_originales)
-
-test_edges_idx <- sample(n_aristas,
-                         size = floor(0.2 * n_aristas))
-
-test_edges <- aristas_originales[test_edges_idx, ]
-
-similitudes_test <- sapply(1:nrow(test_edges), function(i) {
-  prod1 <- test_edges[i, 1]
-  prod2 <- test_edges[i, 2]
-
-  if (prod1 %in% rownames(S_items) &&
-      prod2 %in% rownames(S_items)) {
-    return(S_items[prod1, prod2])
-  } else {
-    return(NA)
+recomendar_icf <- function(S, producto_id, top_n = 5) {
+  if (!producto_id %in% rownames(S)) {
+    return(NULL) 
   }
-})
+  
+  similitudes <- S[producto_id, ]
+  similitudes[producto_id] <- -Inf 
+  top <- sort(similitudes, decreasing = TRUE)[1:top_n]
+  
+  data.frame(
+    producto_recomendado = names(top),
+    similitud_pearson    = round(top, 3)
+  )
+}
 
-similitudes_test <- similitudes_test[!is.na(similitudes_test)]
-
-cat("Aristas ocultas para test:", length(similitudes_test), "\n")
-cat("Similitud media:", round(mean(similitudes_test), 4), "\n")
-cat("Similitud mediana:", round(median(similitudes_test), 4), "\n")
-cat("Mínimo:", round(min(similitudes_test), 4), "\n")
-cat("Máximo:", round(max(similitudes_test), 4), "\n")
 ```
 :::
 
 **3. Crítica humana y validación:**
-Parecía correcta, la implementé y así fue. Sin embargo, borre algunos campos
+Era correcto, la función hacía lo que se le pedía. Devolver los 5 elementos con mayor similitud para recomendarlos.
 
 **4. Solución final:**
-Lo implementé ligeramente modificado en mi código
+Lo implementé en mi código
 
-## Interacción 14: Interpretación de las recomendaciones generadas
+***
 
-**1. Prompt inicial:**
+## ALUCINACIÓN IA:
 
-> *"Ya tengo una lista de productos recomendados. ¿Cómo puedo comprobar si realmente son parecidos al producto original?"*
+**1. Alucinación IA:**
 
-**2. Respuesta de la IA:**
+La IA me dijo que había que analizar las correlaciones del PCA en base a las correlaciones de los datos originales de dimesionalidad 4 en la base canónica.
 
-::: {.callout-note appearance="simple"}
-```r
-#| label: analisis-recomendaciones
+**2. Solución:**
 
-productos_a_revisar <- c(producto_ejemplo, recomendaciones$producto_recomendado)
+Yo sabía (y le pregunté al profesor en clase por si acaso) que la correlación se hacía en base a la proyección de sus dos primeras dimensiones en la base canónica (o en su defecto, simplemente viendo el biplot del PCA). Si no hacía esto, jamás iba a sacar un resultado concluyente o relevante porque lo que me pedía analizar la IA era comparar las correlaciones de 4 atributos cualesquiera y no los atributos generados a partir de una base donde la premisa es maximizar la varianza.
 
-analisis_recomendaciones <- nodos_df |>
-  filter(name %in% productos_a_revisar) |>
-  select(name, comunidad, calidad, rating_promedio) |>
-  arrange(match(name, productos_a_revisar))
+## ALUCINACIÓN IA:
 
-cat("Análisis de las Recomendaciones:\n")
-print(analisis_recomendaciones)
-``` 
-:::
+**1. Alucinación IA:**
 
-**3. Crítica humana y validación:**
-Era correcto y justamente lo que quería ilustrar.
+A la hora de realizar la validación cruzada, la IA aseguraba que la centralidad y la distancia euclidea (para ver los outliers) estaban correlacionados. 
 
-**4. Solución final:**
-Lo implementé ligeramente en mi código.
+**2. Solución:**
+
+Yo estaba seguro de que eso no era así. Tenía el gráfico delante y se podía ver claramente que la distribución de puntos no tenía ningún tipo de relación con el grado. Además, el corrplot me daba más la razón todavía, demostrando que la IA se equivocaba. Ambos puntos están explicados a lo largo del código.
+

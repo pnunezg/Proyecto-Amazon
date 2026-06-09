@@ -8,14 +8,14 @@ library(tidyverse)
 library(igraph)    
 library(tidygraph) 
 library(ggraph)    
-library(ggforce)
+library(corrplot) 
 
 tabla_metricas  <- readRDS("datos/tabla_metricas.rds")
 datos_filtrados <- readRDS("datos/datos_filtrados.rds")  
-
+acp <- readRDS("datos/acp.rds")
 N = 4
 ```
-*Basándome en la tabla generada, cogí **$N=4$** como el hiperparámetro óptimo. La cogí por ser la opción más equilibrada en cuanto a número de nodos - densidad. Más abajo hay una función que enseña cuáles eran las distintas combinaciones según la **N** escogida. También pensé en cogerla para poder representar la red y que se viese cierta complejidad en las comunidades pero que se viesen las aristas que relacionan los nodos de estas de una forma relativamente clara.
+Basándome en la tabla generada, cogí **N=4$** como el hiperparámetro óptimo. La cogí por ser la opción más equilibrada en cuanto a número de nodos - densidad. Más abajo hay una función que enseña cuáles eran las distintas combinaciones según la **N** escogida. También pensé en cogerla para poder representar la red y que se viese cierta complejidad en las comunidades pero que se viesen las aristas que relacionan los nodos de estas de una forma relativamente clara.
 
 # Bloque II: Análisis de Redes Sociales (SNA)
 
@@ -232,6 +232,70 @@ ggraph(grafo_top3, layout = "stress") +
   )
 ```
 Como se puede ver en el gráfico (y lo confirmo) las comunidades están todas aisladas unas con otras. Sin embargo, sí que se puede apreciar que están altamente conectadas localmente. Esto se puede dar por haber filtrado en una época de tiempo donde los patrones de los compradores no han hecho que se empiecen a conocer las distintas comunidades. También puede ser que Amazon tuviese un pobre sistema de recomendación en 2010 y los nichos de comunidades nunca conociesen la vida exterior. 
+
+***
+## Validación cruzada
+
+Como no especifica que medida de centralidad se quiere contrastar, yo he cogido el `degree`.
+
+Aquí lo que hago es juntar, en cada fila, toda la información asociada a un producto, tanto de SNA como de PCA. Entonces, me quedo con coordenadas (x,y) del subespacio vectorial de dimensión 2 de PCA seguido de los datos asociados al SNA (todo esto fue unido mediante el ProductId).
+
+- Como ya expliqué en el bloque 1, en las `$x` vienen todos los productos en el espacio vectorial PCA, por lo que es muy fácil de sacar. Luego le asigno a cada coordenada su Id de producto.
+
+- Selecciono de mi grafo el Id y el `degree`.
+
+- Los junto mediante un inner join y ya tengo toda la información de ambos análisis condensada en filas.
+
+- Hago un `plot` donde se puede se colocan los scores en el subespacio definido por los ejes PC1 y PC2 y en la representación visaul el tamaño depende de su medida de centralidad elegida, o sea, el `degree`.
+```{r}
+#| label: validacion-cruzada-pca-sna
+
+# Veo cuales son las coordenadas de cada dato en el subespacio vectorial de ACP de dimension 2.
+scores_pca <- as.data.frame(acp$x[, 1:2])
+scores_pca$ProductId    <- tabla_metricas$ProductId
+
+# Defino la distancia euclideana para poder establecer qué es un outlier en mi subespacio vectorial. Esto es para ver luego la correlación
+scores_pca$distancia_pca <- sqrt(scores_pca$PC1^2 + scores_pca$PC2^2)
+
+centralidad_sna <- g_amazon |>
+  as_tibble() |>
+  rename(ProductId = name) |>
+  select(ProductId, degree)
+
+# Uno las coordenadas (x,y) asociadas a cada producto y los uno a los resultados asociados a cada producto mediante mediante el ProductId
+validacion <- scores_pca |>
+  inner_join(centralidad_sna, by = "ProductId")
+
+
+ggplot(validacion, aes(x = PC1, y = PC2)) +
+  geom_point(aes(size = degree, color = degree), alpha = 0.7, show.legend = c(size = TRUE, color = FALSE)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray60") +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "gray60") +
+  labs(
+    title    = "Validación Cruzada PCA × SNA",
+    subtitle = "Posición latente (PCA) vs centralidad en la red de co-compra",
+    x = "PC1 — Popularidad / Coste",
+    y = "PC2 — Calidad"
+  ) +
+  theme_minimal()
+```
+Se puede apreciar que la centralidad no afecta a la distribución de los puntos en PCA. Hay puntos de distinto grado disribuidos por toda la nube de puntos. Lo que se puede deducir de aquí es que la centralidad no es un factor que capture atipicad en el PCA.
+
+```{r}
+
+cor_cruzada <- validacion |>
+  select(distancia_pca, degree) |> 
+  cor(use = "pairwise.complete.obs")
+
+# Represento la matriz de correlación (sin duplicar la función cor)
+corrplot(cor_cruzada, 
+         method = "number", 
+         type = "full",
+         col = colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))(200))
+```
+Se puede confirmar lo que se veía en el gráfico y lo escrito en texto. Son dos variables prácticamente incorrelacionadas. Esto quiere decir que bajo ningún concepto la medida de centralidad del grado afecta a si un dato puede ser o no outlier ya que no tienen nada que ver.
+
+La conclusión sacada de la validación cruzada es que estoy trabajando en un problema con métricas que no se pisan, sino que se apoyan. Estoy viendo otra del problema que me dice información relevante distinta de la que ya tenía anteriormente.
 
 ```{r}
 saveRDS(g_amazon, "datos/g_amazon.rds")

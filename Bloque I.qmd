@@ -192,6 +192,7 @@ Dado que PC1 y PC2 superan dicho umbral y PC3 queda por debajo, se retienen las 
 #| label: guardado-de-datos
 
 # Guardado de datos que explico en el anexo
+saveRDS(acp, "datos/acp.rds")  
 saveRDS(tabla_metricas, "datos/tabla_metricas.rds")
 saveRDS(datos_filtrados, "datos/datos_filtrados.rds")
 ```
